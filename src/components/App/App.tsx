@@ -1,18 +1,18 @@
 import { useEffect, useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import './App.css';
-import { Banner } from './components/Banner';
-import { ErrorBoundary } from './components/ErrorBoundary';
-import { Notification } from './components/Notification';
-import { TaskInput, TaskList } from './components/Tasks';
-import { CompletedTasksList } from './components/Tasks/CompletedTasksList';
-import { Timer } from './components/Timer';
-import { DEFAULT_TIMER_SETTINGS } from './constants/timerConstants';
-import { TimerProvider } from './contexts/TimerContext';
-import { useLogger } from './hooks/useLogger';
-import { NotificationState, Task } from './types';
-import { initializeApp } from './utils/appSetup';
-import { tasksDB } from './utils/database';
+import { Banner } from '../Banner';
+import { ErrorBoundary } from '../ErrorBoundary';
+import { Notification } from '../Notification';
+import { TaskInput, TaskList } from '../Tasks';
+import { CompletedTasksList } from '../Tasks/CompletedTasksList';
+import { Timer } from '../Timer';
+import { DEFAULT_TIMER_SETTINGS } from '../../constants/timerConstants';
+import { TimerProvider } from '../../contexts/TimerContext';
+import { useLogger } from '../../hooks/useLogger';
+import { NotificationState, Task } from '../../types';
+import { initializeApp } from '../../utils/appSetup';
+import { tasksDB } from '../../utils/database';
 import { usePostHog } from 'posthog-js/react';
 
 function App() {
@@ -89,6 +89,28 @@ function App() {
 
         loadCompletedTasks();
     }, [logger]);
+
+    useEffect(() => {
+        const originalFaviconLinks: NodeListOf<HTMLLinkElement> = document.querySelectorAll('link[rel="icon"]');
+        function disableCurrentFavicons(){
+            originalFaviconLinks.forEach(link => {
+                link.disabled = true
+            });
+        }
+
+        function enableFavicons(){
+            originalFaviconLinks.forEach(link => {
+                link.disabled = false
+            });
+        }
+
+        disableCurrentFavicons();
+
+        return () => {
+            enableFavicons();
+        }
+        
+    }, []);
 
     const handleAddTask = async (category: string, description: string) => {
         const newTask: Task = {
