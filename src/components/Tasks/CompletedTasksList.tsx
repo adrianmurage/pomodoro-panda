@@ -4,7 +4,7 @@ import styles from './Tasks.module.css';
 import completedStyles from './CompletedTasksList.module.css';
 import { CompletedTaskMenu } from './CompletedTaskMenu';
 import { TaskInput } from './TaskInput';
-
+import { CompletedTasksSummary } from './CompletedTasksSummary';
 interface CompletedTasksListProps {
   tasks: Task[];
   onRepeatTask: (category: string, description: string, pomodoros?: number) => void;
@@ -63,11 +63,7 @@ export const CompletedTasksList: React.FC<CompletedTasksListProps> = ({
 
   return (
     <div className={styles.taskList}>
-      <div className={styles.taskSummary}>
-        <div className={styles.summaryItem}>
-          <span>Completed · {tasks.length}</span>
-        </div>
-      </div>
+      <CompletedTasksSummary tasks={tasks} />
 
       {/* add a header section with category & description */}
       <div className={completedStyles.completedTasksHeader}>

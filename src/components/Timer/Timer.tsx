@@ -24,7 +24,7 @@ export const Timer: React.FC<TimerProps> = ({
     onTaskComplete,
 }) => {
     const [notification, setNotification] = useState<string | null>(null);
-    const logger = useLogger('Timer');
+    const timerLogger = useLogger('Timer');
     const posthog = usePostHog();
 
     const { state, startBreak, startTimer, resetTimer, pauseTimer, switchTimer, settings } =
@@ -95,7 +95,7 @@ export const Timer: React.FC<TimerProps> = ({
         const completedTask = {
             ...selectedTask,
             id: `completed-${timerState.activeTaskId}-${Date.now()}`,
-            endTime: timerState.expectedEndTime,
+            endTime: Date.now(),
             duration: actualDurationMs,
             completed: true,
             pomodoros: 1,
@@ -117,7 +117,7 @@ export const Timer: React.FC<TimerProps> = ({
             });
             showInAppNotification(COMPLETION_MESSAGES[state.timerType]);
         } catch (error) {
-            logger.error(
+            timerLogger.error(
                 'Failed to complete task:',
                 error instanceof Error ? error.message : error
             );

@@ -56,8 +56,26 @@ export const calculateTotalDuration = (
 
     tasks.forEach(task => {
         const pomodoros = task.pomodoros || 1;
-        // Only add work periods, converting from seconds to minutes
-        totalMinutes += (pomodoros * (settings.workDuration / 60));
+        const workDuration = pomodoros * settings.workDuration;
+        // Only add work periods, converting from milliseconds to minutes
+        totalMinutes += workDuration / 60000;
+    });
+
+    return {
+        hours: Math.floor(totalMinutes / 60),
+        minutes: Math.round(totalMinutes % 60)
+    };
+}; 
+
+export const calculateCompletedDuration = (
+    tasks: Task[],
+): { hours: number; minutes: number } => {
+    let totalMinutes = 0;
+
+    tasks.forEach(task => {
+        const workDuration = task?.duration || 0;
+        // Only add work periods, converting from milliseconds to minutes
+        totalMinutes += workDuration / 60000;
     });
 
     return {
