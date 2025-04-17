@@ -81,6 +81,10 @@ export const Timer: React.FC<TimerProps> = ({
         showNotification(state.timerType);
         setNotification(COMPLETION_MESSAGES[state.timerType]);
 
+        if(state.timerType === TIMER_TYPES.BREAK || state.timerType === TIMER_TYPES.LONG_BREAK) {
+            return;
+        }
+
         let actualDurationMs = undefined;
 
         if (timerState.hasCompleted) {
