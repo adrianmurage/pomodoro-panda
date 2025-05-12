@@ -1,10 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { Task } from '../../types';
 import styles from './Tasks.module.css';
 import completedStyles from './CompletedTasksList.module.css';
 import { CompletedTaskMenu } from './CompletedTaskMenu';
 import { TaskInput } from './TaskInput';
 import { CompletedTasksSummary } from './CompletedTasksSummary';
+import { useLogger } from '../../hooks/useLogger';
+
 interface CompletedTasksListProps {
   tasks: Task[];
   onRepeatTask: (category: string, description: string, pomodoros?: number) => void;
@@ -18,6 +21,8 @@ export const CompletedTasksList: React.FC<CompletedTasksListProps> = ({
   onEditCompletedTask,
   onDeleteCompletedTask
 }) => {
+  const location = useLocation();
+  const logger = useLogger(CompletedTasksList.name);
   const [isMenuOpen, setIsMenuOpen] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState<string | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -61,14 +66,61 @@ export const CompletedTasksList: React.FC<CompletedTasksListProps> = ({
     }
   };
 
+  /**
+   * Formats a task's end time (Unix timestamp in milliseconds) into a readable string.
+   * The format depends on the current page:
+   * - On the '/stats' page, it returns 'DD/MM/YYYY - HH:MM'.
+   * - On other pages, it returns 'HH:MM'.
+   * Returns '--:--' if the endTime is missing or invalid, or 'Error' if formatting fails.
+   * @param endTime - The Unix timestamp (in milliseconds) when the task was completed.
+   * @returns A formatted string representing the end time, or a placeholder/error string.
+   */
+  const formatTaskEndTime = (endTime: number | undefined | null): string => {
+    if (!endTime) {
+      logger.warn('Task end time is missing or invalid');
+      return '--:--';
+    }
+    try {
+      const date = new Date(endTime);
+      if (isNaN(date.getTime())) {
+        logger.warn(`Invalid date created from endTime: ${endTime}`);
+        return '--:--';
+      }
+
+      const timeOptions: Intl.DateTimeFormatOptions = {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false
+      };
+
+      if (location.pathname === '/stats') {
+        const dateOptions: Intl.DateTimeFormatOptions = {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric'
+        };
+        return `${date.toLocaleDateString('en-GB', dateOptions)} - ${date.toLocaleTimeString([], timeOptions)}`;
+      } else {
+        return date.toLocaleTimeString([], timeOptions);
+      }
+    } catch (error) {
+      logger.error(`Error formatting date for endTime ${endTime}:`, error);
+      return 'Error';
+    }
+  };
+
   return (
     <div className={styles.taskList}>
       <CompletedTasksSummary tasks={tasks} />
 
-      {/* add a header section with category & description */}
       <div className={completedStyles.completedTasksHeader}>
         <div className={completedStyles.taskCategory}>Category</div>
         <div className={completedStyles.taskDescription}>Description</div>
+        <div className={styles.taskTime}>
+          {location.pathname === '/stats' ? 'Completed On' : 'Time'}
+        </div>
+        <div className={styles.taskTime}>Duration</div>
+        <div className={styles.taskActions}>Actions</div>
       </div>
       
       <div role="list" aria-label="Completed tasks" className={completedStyles.completedTasksList}>
@@ -80,7 +132,7 @@ export const CompletedTasksList: React.FC<CompletedTasksListProps> = ({
                 className={styles.taskItemEditing}
               >
                 <TaskInput
-                  onAddTask={() => {}} // Not used in edit mode
+                  onAddTask={() => {}}
                   onEditCompletedTask={(category, description, duration) => 
                     handleEditSubmit(task.id, category, description, duration)
                   }
@@ -97,6 +149,8 @@ export const CompletedTasksList: React.FC<CompletedTasksListProps> = ({
             );
           }
 
+          const formattedEndTime = formatTaskEndTime(task.endTime);
+
           return (
             <div
               key={task.id}
@@ -106,13 +160,10 @@ export const CompletedTasksList: React.FC<CompletedTasksListProps> = ({
               <div className={styles.taskCategory}>{task.category}</div>
               <div className={styles.taskDescription}>{task.description}</div>
               <div className={styles.taskTime}>
-                {new Date(task.endTime!).toLocaleTimeString([], {
-                  hour: '2-digit',
-                  minute: '2-digit'
-                })}
+                {formattedEndTime}
               </div>
               <div className={styles.taskTime}>
-                {Math.round(task.duration! / 60000)}m
+                {typeof task.duration === 'number' ? `${Math.round(task.duration / 60000)}m` : '--m'}
               </div>
               <div className={styles.taskActions} ref={isMenuOpen === task.id ? menuRef : undefined}>
                 <button

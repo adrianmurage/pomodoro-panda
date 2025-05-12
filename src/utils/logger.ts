@@ -15,7 +15,7 @@ class Logger {
         // Default level based on environment
         this.level = config.level ?? (
             process.env.NODE_ENV === 'production'
-                ? LogLevel.INFO // Only info and above in production
+                ? LogLevel.WARN // Only warn and above in production
                 : LogLevel.DEBUG // All logs in development
         );
 

@@ -1,0 +1,45 @@
+.navBar {
+    padding: var(--spacing-xs) var(--spacing-md);
+    border-bottom: 1px solid var(--color-primary);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--spacing-md);
+}
+
+.navLeft {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    font-size: 20px;
+    text-decoration: none;
+    color: var(--color-text);
+}
+
+.navIcon {
+    height: 32px;
+    width: auto;
+}
+
+.navLinks {
+    display: flex;
+    gap: var(--spacing-sm);
+}
+
+.navLink {
+    color: var(--color-text);
+    text-decoration: none;
+    padding: var(--spacing-xs) var(--spacing-xs);
+    transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
+}
+
+.navLink:hover {
+    color: var(--color-primary);
+    background-color: var(--color-primary-background);
+}
+
+.navLinkActive {
+    border-bottom: 4px solid var(--color-primary);
+    border-radius: 0;
+    margin-bottom: -9px;
+}

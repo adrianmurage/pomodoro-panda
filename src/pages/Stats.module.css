@@ -1,0 +1,62 @@
+.statsContainer {
+    padding: 20px;
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.infoCardsContainer {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 30px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.infoCard {
+    padding: 10px 15px;
+    border-radius: 6px;
+    color: white;
+    min-width: 180px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    display: flex;
+    justify-content: space-around;
+}
+
+.infoCardLeftRow {
+    display: flex;
+    align-items: top;
+    margin-bottom: 2px;
+}
+
+.infoCardRightRow {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+}
+
+.infoCardIcon {
+    margin-top: 4px;
+    font-size: 20px;
+    margin-right: 8px;
+    line-height: 1;
+}
+
+.infoCardValue {
+    font-size: 16px;
+    font-weight: bold;
+}
+
+.infoCardLabel {
+    font-size: 17px;
+    text-align: right;
+    width: 100%;
+    margin: 0;
+}
+
+.pomodorosCard {
+    background-color: #d9534f;
+}
+
+.timeSpentCard {
+    background-color: #f0ad4e;
+}
