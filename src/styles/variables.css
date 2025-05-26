@@ -11,23 +11,38 @@
   --color-text-light: #666;
   --color-border: #ddd;
   --color-black: #000;
-  
+
   /* Spacing */
   --spacing-xs: 0.5rem;
   --spacing-sm: 1rem;
   --spacing-md: 1.5rem;
   --spacing-lg: 2rem;
-  
+
   /* Border radius */
   --border-radius-sm: 4px;
   --border-radius-circle: 50%;
-  
+
   /* Shadows */
   --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.1);
-  
+
   /* Font sizes */
   --font-size-xs: 0.875rem;
   --font-size-sm: 0.9rem;
   --font-size-md: 1rem;
   --font-size-lg: 4rem;
-} 
+}
+
+/* Dark mode theme */
+[data-theme="dark"] {
+  --color-primary: #ff7961;
+  --color-primary-background: rgba(255, 121, 97, 0.1);
+  --color-success: #81c784;
+  --color-info: #64b5f6;
+  --color-background: #121212;
+  --color-background--light-gray: #2c2c2c;
+  --color-white: #1e1e1e;
+  --color-text: #eee;
+  --color-text-light: #aaa;
+  --color-border: #444;
+  --color-black: #000;
+}
