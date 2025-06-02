@@ -17,6 +17,7 @@ import type {
     TimerSettings,
     TimerState,
 } from '../types/timer';
+import { createWaitJob } from '@/utils/serviceWorkerUtils';
 
 const initialState: TimerState = {
     timeLeft: DEFAULT_TIMER_SETTINGS.workDuration,
@@ -181,6 +182,11 @@ export const TimerProvider: React.FC<{
                     activeTaskId: task.id,
                 },
             });
+            createWaitJob({
+                id: task.id,
+                description: task.description,
+                duration: now + state.timeLeft - now,
+            });
         },
         [state.timeLeft]
     );
@@ -198,6 +204,11 @@ export const TimerProvider: React.FC<{
                         timerType: TIMER_TYPES.BREAK,
                     },
                 });
+                createWaitJob({
+                    id: `break-${now}`,
+                    description: `Break for ${settings.breakDuration / 1000} seconds`,
+                    duration: settings.breakDuration,
+                });
             } else if (breakType === TIMER_TYPES.LONG_BREAK) {
                 dispatch({
                     type: 'START_BREAK',
@@ -208,6 +219,11 @@ export const TimerProvider: React.FC<{
                         duration: settings.longBreakDuration ,
                         timerType: TIMER_TYPES.LONG_BREAK,
                     },
+                });
+                createWaitJob({
+                    id: `long-break-${now}`,
+                    description: `Long break for ${settings.longBreakDuration / 1000} seconds`,
+                    duration: settings.longBreakDuration,
                 });
             }
         },
