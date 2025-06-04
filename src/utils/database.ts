@@ -402,7 +402,7 @@ export const settingsDB = {
     });
   },
 
-  async set(key: string, value: boolean | number | string, p0?: string): Promise<void> {
+  async set(key: string, value: boolean | number | string): Promise<void> {
     if (!key || typeof key !== 'string' || key.trim() === '') {
       throw new Error('Setting key cannot be empty');
     }

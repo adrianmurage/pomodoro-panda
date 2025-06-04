@@ -1,15 +1,11 @@
 import { usePostHog } from "posthog-js/react";
 import styles from "./Settings.module.css";
 import { settingsDB } from "../utils/database";
-import { TimerSettings } from "../types";
 import { useUserSettings } from "../hooks/useUserSettings";
-
-export interface UserSettings extends TimerSettings {
-  addTasksToBottom: boolean;
-}
+import { UserSettings } from "../types";
+import TimerSettingInput from "../components/Timer/TimerSettingInput";
 
 const Settings = () => {
-  // const logger = useLogger("Settings");
   const {
     settings,
     setSettings,
@@ -58,7 +54,7 @@ const Settings = () => {
         value: settings[settingName as keyof UserSettings],
       });
     } catch (error) {
-      console.log(error);
+      logger.error(`Failed to update setting "${settingName}":`, error);
     }
   };
 
@@ -90,168 +86,84 @@ const Settings = () => {
 
         <div className={styles.settingItem}>
           {/* Work Duration */}
-          <div className={styles.timerRow}>
-            <span className={styles.timerLabel}>Pomodoro Session</span>
-            {editingSetting === "workDuration" ? (
-              <input
-                type="number"
-                min={1}
-                max={120}
-                value={settings.workDuration}
-                className={styles.timerInput}
-                onChange={(e) =>
-                  setSettings((prev) => ({
-                    ...prev,
-                    workDuration: Number(e.target.value),
-                  }))
-                }
-                onBlur={() => {
-                  setEditingSetting(null);
-                  handleSettingChange("workDuration");
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    console.log(e.key);
-                    setEditingSetting(null);
-                    handleSettingChange("workDuration");
-                  }
-                }}
-                autoFocus
-              />
-            ) : (
-              <div
-                className={styles.timerValue}
-                onClick={() => setEditingSetting("workDuration")}
-              >
-                {settings.workDuration}{" "}
-                <span className={styles.timerUnit}>min</span>
-                <span className={styles.timerArrow}>&#8250;</span>
-              </div>
-            )}
-          </div>
+
+          <TimerSettingInput
+            label="Pomodoro Session"
+            settingKey="workDuration"
+            value={settings.workDuration}
+            unit="min"
+            min={1}
+            max={120}
+            isEditing={editingSetting === "workDuration"}
+            onEdit={setEditingSetting}
+            onChange={(value) =>
+              setSettings((prev) => ({ ...prev, workDuration: value }))
+            }
+            onSave={() => {
+              setEditingSetting(null);
+              handleSettingChange("workDuration");
+            }}
+          />
 
           {/* Short Break */}
-          <div className={styles.timerRow}>
-            <span className={styles.timerLabel}>Short break</span>
-            {editingSetting === "breakDuration" ? (
-              <input
-                type="number"
-                min={1}
-                max={60}
-                value={settings.breakDuration}
-                className={styles.timerInput}
-                onChange={(e) =>
-                  setSettings((prev) => ({
-                    ...prev,
-                    breakDuration: Number(e.target.value),
-                  }))
-                }
-                onBlur={() => {
-                  setEditingSetting(null);
-                  handleSettingChange("breakDuration");
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    console.log(e.key);
-                    setEditingSetting(null);
-                    handleSettingChange("breakDuration");
-                  }
-                }}
-                autoFocus
-              />
-            ) : (
-              <div
-                className={styles.timerValue}
-                onClick={() => setEditingSetting("breakDuration")}
-              >
-                {settings.breakDuration}{" "}
-                <span className={styles.timerUnit}>min</span>
-                <span className={styles.timerArrow}>&#8250;</span>
-              </div>
-            )}
-          </div>
+          <TimerSettingInput
+            label="Short Break"
+            settingKey="shortBreakDuration"
+            value={settings.breakDuration}
+            unit="min"
+            min={1}
+            max={120}
+            isEditing={editingSetting === "breakDuration"}
+            onEdit={setEditingSetting}
+            onChange={(value) =>
+              setSettings((prev) => ({ ...prev, breakDuration: value }))
+            }
+            onSave={() => {
+              setEditingSetting(null);
+              handleSettingChange("breakDuration");
+            }}
+          />
 
           {/* Long Break */}
-          <div className={styles.timerRow}>
-            <span className={styles.timerLabel}>Long break</span>
-            {editingSetting === "longBreakDuration" ? (
-              <input
-                type="number"
-                min={1}
-                max={60}
-                value={settings.longBreakDuration}
-                className={styles.timerInput}
-                onChange={(e) =>
-                  setSettings((prev) => ({
-                    ...prev,
-                    longBreakDuration: Number(e.target.value),
-                  }))
-                }
-                onBlur={() => {
-                  setEditingSetting(null);
-                  handleSettingChange("longBreakDuration");
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    console.log(e.key);
-                    setEditingSetting(null);
-                    handleSettingChange("longBreakDuration");
-                  }
-                }}
-                autoFocus
-              />
-            ) : (
-              <div
-                className={styles.timerValue}
-                onClick={() => setEditingSetting("longBreakDuration")}
-              >
-                {settings.longBreakDuration}{" "}
-                <span className={styles.timerUnit}>min</span>
-                <span className={styles.timerArrow}>&#8250;</span>
-              </div>
-            )}
-          </div>
+          <TimerSettingInput
+            label="Long Break"
+            settingKey="longBreakDuration"
+            value={settings.longBreakDuration}
+            unit="min"
+            min={1}
+            max={120}
+            isEditing={editingSetting === "longBreakDuration"}
+            onEdit={setEditingSetting}
+            onChange={(value) =>
+              setSettings((prev) => ({ ...prev, longBreakDuration: value }))
+            }
+            onSave={() => {
+              setEditingSetting(null);
+              handleSettingChange("longBreakDuration");
+            }}
+          />
 
           {/* Long Break after how many sessions */}
-          <div className={styles.timerRow}>
-            <span className={styles.timerLabel}>Long break after</span>
-            {editingSetting === "sessionsUntilLongBreak" ? (
-              <input
-                type="number"
-                min={1}
-                max={10}
-                value={settings.sessionsUntilLongBreak}
-                className={styles.timerInput}
-                onChange={(e) =>
-                  setSettings((prev) => ({
-                    ...prev,
-                    sessionsUntilLongBreak: Number(e.target.value),
-                  }))
-                }
-                onBlur={() => {
-                  setEditingSetting(null);
-                  handleSettingChange("sessionsUntilLongBreak");
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    console.log(e.key);
-                    setEditingSetting(null);
-                    handleSettingChange("sessionsUntilLongBreak");
-                  }
-                }}
-                autoFocus
-              />
-            ) : (
-              <div
-                className={styles.timerValue}
-                onClick={() => setEditingSetting("sessionsUntilLongBreak")}
-              >
-                {settings.sessionsUntilLongBreak}{" "}
-                <span className={styles.timerUnit}>sess</span>
-                <span className={styles.timerArrow}>&#8250;</span>
-              </div>
-            )}
-          </div>
+          <TimerSettingInput
+            label="Sessions Until Long Break"
+            settingKey="sessionsUntilLongBreak"
+            value={settings.sessionsUntilLongBreak}
+            unit="sess"
+            min={1}
+            max={120}
+            isEditing={editingSetting === "sessionsUntilLongBreak"}
+            onEdit={setEditingSetting}
+            onChange={(value) =>
+              setSettings((prev) => ({
+                ...prev,
+                sessionsUntilLongBreak: value,
+              }))
+            }
+            onSave={() => {
+              setEditingSetting(null);
+              handleSettingChange("sessionsUntilLongBreak");
+            }}
+          />
         </div>
       </div>
     </div>

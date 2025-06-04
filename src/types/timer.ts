@@ -1,5 +1,5 @@
-import type { TimerType } from '../constants/timerConstants';
-import type { Task } from './task';
+import type { TimerType } from "../constants/timerConstants";
+import type { Task } from "./task";
 
 // Timer settings
 export interface TimerSettings {
@@ -7,6 +7,23 @@ export interface TimerSettings {
   breakDuration: number;
   longBreakDuration: number;
   sessionsUntilLongBreak: number;
+}
+
+export interface UserSettings extends TimerSettings {
+  addTasksToBottom: boolean;
+}
+
+export interface TimerSettingInputProps {
+  label: string;
+  settingKey: keyof UserSettings;
+  value: number;
+  unit: string;
+  min: number;
+  max: number;
+  isEditing: boolean;
+  onEdit: (key: string) => void;
+  onChange: (value: number) => void;
+  onSave: () => void;
 }
 
 // Core timer state interface used across the application
@@ -26,11 +43,26 @@ export interface TimerState {
 
 // Define action types
 export type TimerAction =
-  | { type: 'UPDATE_TIMER_STATE'; payload: Partial<TimerState> }
-  | { type: 'START_BREAK'; payload: { startTime: number; expectedEndTime: number; duration: number; timerType: TimerType } }
-  | { type: 'START_TIMER'; payload?: { startTime?: number; expectedEndTime?: number; activeTaskId?: string } }
-  | { type: 'PAUSE_TIMER' }
-  | { type: 'UPDATE_TIME_LEFT'; payload: { timeLeft: number } };
+  | { type: "UPDATE_TIMER_STATE"; payload: Partial<TimerState> }
+  | {
+      type: "START_BREAK";
+      payload: {
+        startTime: number;
+        expectedEndTime: number;
+        duration: number;
+        timerType: TimerType;
+      };
+    }
+  | {
+      type: "START_TIMER";
+      payload?: {
+        startTime?: number;
+        expectedEndTime?: number;
+        activeTaskId?: string;
+      };
+    }
+  | { type: "PAUSE_TIMER" }
+  | { type: "UPDATE_TIME_LEFT"; payload: { timeLeft: number } };
 
 // Define context type
 
@@ -39,20 +71,23 @@ export interface TimerContextType {
   startBreak: (breakType: TimerType) => void;
   startTimer: (task: Task) => void;
   pauseTimer: () => void;
-  resetTimer: ()=> void;
+  resetTimer: () => void;
   switchTimer: () => void;
   setOnComplete: (callback: (state: TimerState) => void) => void;
   settings: TimerSettings;
 }
-export interface TimerContextState extends Omit<TimerState, 'sessionsCompleted'> {
+export interface TimerContextState
+  extends Omit<TimerState, "sessionsCompleted"> {
   updateTimerState: (state: TimerStateUpdate) => void;
 }
 
 // Type for partial updates to timer state
-export type TimerStateUpdate = Partial<Omit<TimerContextState, 'updateTimerState'>>;
+export type TimerStateUpdate = Partial<
+  Omit<TimerContextState, "updateTimerState">
+>;
 
 // Reference type for tracking previous state
-export type TimerStateRef = Omit<TimerState, 'sessionsCompleted'>;
+export type TimerStateRef = Omit<TimerState, "sessionsCompleted">;
 
 // Component props
 export interface TimerProps {

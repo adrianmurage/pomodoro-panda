@@ -179,8 +179,6 @@ export const TimerProvider: React.FC<{
 
     // Set the initialState
     if (!state.isRunning) {
-      console.log("User settings", userSettings.workDuration);
-      console.log("Initial State: ", initialState.timeLeft);
       initialState.timeLeft = userSettings.workDuration * 90 * 1000;
     }
 

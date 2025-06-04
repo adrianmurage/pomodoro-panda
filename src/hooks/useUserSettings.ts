@@ -4,8 +4,8 @@ import {
   DEFAULT_TIMER_SETTINGS,
 } from "../constants/timerConstants";
 import { settingsDB } from "../utils/database";
-import type { UserSettings } from "../pages/Settings";
 import { useLogger } from "./useLogger";
+import { UserSettings } from "../types";
 
 export function useUserSettings() {
   const logger = useLogger("Settings");
@@ -30,11 +30,15 @@ export function useUserSettings() {
           })
         );
 
-        for (const [key, value] of entries) {
-          setSettings((prev) => ({
-            ...prev,
-            [key]: value ?? prev[key],
-          }));
+        const newSettings = entries.reduce((acc, [key, value]) => {
+          if (value !== null) {
+            acc[key] = value;
+          }
+          return acc;
+        }, {} as UserSettings);
+        
+        if (Object.keys(newSettings).length > 0) {
+          setSettings((prev) => ({ ...prev, ...newSettings }));
         }
 
         setIsLoading(false);
