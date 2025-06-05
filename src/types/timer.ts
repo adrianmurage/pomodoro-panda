@@ -82,7 +82,6 @@ export interface TimerControlsProps {
 // Hook props
 export interface UseTimerProps {
   onComplete?: (state: TimerState) => void;
-  settings?: TimerSettings;
 }
 
 // Time estimation interfaces

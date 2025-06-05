@@ -87,10 +87,13 @@ describe('Settings Database Integration', () => {
             throw error;
         }
 
-        // Verify all settings were set correctly
-        const [key, value] = operations[operations.length - 1];
-        const retrievedValue = await settingsDB.getSetting<boolean>(key);
-        expect(retrievedValue).toBe(value);
+        // Verify every write completed as expected
+        await Promise.all(
+            operations.map(async ([k, v]) => {
+                const result = await settingsDB.getSetting<boolean>(k);
+                expect(result).toBe(v);
+            }),
+        );
     });
 
     test('should persist settings across database connections', async () => {
@@ -114,10 +117,9 @@ describe('Settings Database Integration', () => {
         const key = 'addTasksToBottom' as SettingKey;
         
         // Test with empty key (should be handled by type system)
-        await expect(async () => {
-            // @ts-expect-error - Testing runtime behavior with invalid input
-            await settingsDB.setSetting('', true);
-        }).rejects.toThrow();
+        await expect(settingsDB.setSetting('' as unknown as SettingKey, true))
+            .rejects
+            .toThrow(/invalid.*key/i);
         
         // Test with valid key and value
         await settingsDB.setSetting(key, true);

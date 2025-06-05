@@ -284,6 +284,9 @@ export const tasksDB: ITaskDatabase = {
 };
 
 export const settingsDB: ISettingsDatabase = {
+  /**
+   * @deprecated Use getSetting instead
+   */
   async get<T extends SettingValue>(key: SettingKey): Promise<T | null> {
     return this.getSetting<T>(key);
   },

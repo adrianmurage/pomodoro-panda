@@ -46,9 +46,9 @@ export const useTimer = ({ onComplete }: UseTimerProps = {}) => {
     timerContext.switchTimer();
   }, [timerContext]);
 
-  const getStartTime = useCallback(() => timerContext.state.startTime, [timerContext.state.startTime]);
+  const getStartTime = () => timerContext.state.startTime;
   
-  const getExpectedEndTime = useCallback(() => timerContext.state.expectedEndTime, [timerContext.state.expectedEndTime]);
+  const getExpectedEndTime = () => timerContext.state.expectedEndTime;
 
   return {
     state: timerContext.state,

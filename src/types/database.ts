@@ -20,11 +20,13 @@ export interface TaskRecord extends Task {
     category: string;
     description: string;
     completed: boolean;
+    // Number of pomodoros remaining for this task
     pomodoros: number;
 }
 
 export interface CompletedTaskRecord extends Omit<TaskRecord, 'pomodoros'> {
     endTime: number;
+    // Number of pomodoros completed in this session
     pomodorosCompleted: number;
 }
 

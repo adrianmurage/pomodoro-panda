@@ -29,10 +29,7 @@ const SettingsPage = () => {
   });
   const [isLoading, setIsLoading] = useState(true);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>({});
-  const [localSettings, setLocalSettings] = useState<UserSettings>({
-    ...DEFAULT_TIMER_SETTINGS,
-    addTasksToBottom: false
-  });
+
   const saveStatusTimeouts = useRef<{ [key: string]: NodeJS.Timeout }>({});
   const debouncedSaveRef = useRef<{
     [key: string]: ReturnType<typeof debounce>;
@@ -56,7 +53,6 @@ const SettingsPage = () => {
         };
 
         setSettings(validSettings);
-        setLocalSettings(validSettings);
         setIsLoading(false);
       } catch (error) {
         logger.error("Failed to load settings", { error });
@@ -176,7 +172,7 @@ const SettingsPage = () => {
           ...prev,
           [setting]: valueToStore,
       }));
-      setLocalSettings(prev => ({
+      setSettings(prev => ({
           ...prev,
           [setting]: valueToStore,
       }));
@@ -191,7 +187,7 @@ const SettingsPage = () => {
           logger.error("Failed to create debounced save function - retry failed");
       }
     },
-    [createDebouncedSave, setSettings, setLocalSettings, updateSaveStatus, logger]
+    [createDebouncedSave, setSettings, updateSaveStatus, logger]
   );
 
   if (isLoading) {
@@ -230,8 +226,7 @@ const SettingsPage = () => {
                 addTasksToBottom: false
               };
 
-              // Update both local and main settings state
-              setLocalSettings(defaultValues);
+              // Update settings state
               setSettings(defaultValues);
               
               // Save default values to database
@@ -283,10 +278,7 @@ const SettingsPage = () => {
           />
           <TimerSettingInput
             label="Sessions Until Long Break"
-            value={
-              localSettings?.sessionsUntilLongBreak ??
-              settings.sessionsUntilLongBreak
-            }
+            value={settings.sessionsUntilLongBreak}
             min={1}
             max={10}
             saving={saveStatus.sessionsUntilLongBreak?.saving}

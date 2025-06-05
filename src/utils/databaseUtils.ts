@@ -89,6 +89,10 @@ export function wrapTransaction(transaction: IDBTransaction): Promise<void> {
  * @param value The value to convert
  * @param key The setting key (used for type inference)
  * @returns The converted value
+ * @example
+ * convertSettingValue('25', 'workDuration') // returns 25
+ * convertSettingValue('true', 'autoStartBreaks') // returns true
+ * convertSettingValue(1, 'autoStartBreaks') // returns true
  */
 export function convertSettingValue<T extends SettingValue>(
   value: unknown,

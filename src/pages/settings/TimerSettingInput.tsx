@@ -23,7 +23,9 @@ export const TimerSettingInput: React.FC<TimerSettingInputProps> = ({
     onChange,
     isMinutes = false,
 }) => {
-    const displayValue = isMinutes ? Math.floor(value / (60 * 1000)) : value;
+    const displayValue = isMinutes ? Math.round(value / (60 * 1000)) : value;
+    const displayMin = isMinutes ? Math.round(min / (60 * 1000)) : min;
+    const displayMax = isMinutes ? Math.round(max / (60 * 1000)) : max;
 
     return (
         <div className={styles.settingItem}>
@@ -34,8 +36,8 @@ export const TimerSettingInput: React.FC<TimerSettingInputProps> = ({
                     {saved && <span className={styles.savedIndicator}>Saved!</span>}
                     <input
                         type="number"
-                        min={min}
-                        max={max}
+                        min={displayMin}
+                        max={displayMax}
                         value={displayValue}
                         onChange={(e) => onChange(e.target.value)}
                         className={styles.numberInput}
