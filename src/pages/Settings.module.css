@@ -28,6 +28,9 @@
     font-weight: 500;
     margin-bottom: 0.5rem;
     cursor: pointer;
+    gap: 20px;
+    min-height: 34px; /* Prevent layout shift when status appears */
+    padding-right: 4px;
 }
 
 .settingDescription {
@@ -48,6 +51,28 @@
     opacity: 0;
     width: 0;
     height: 0;
+}
+
+.inputWithStatus {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    justify-content: flex-end;
+}
+
+.savingIndicator, .savedIndicator {
+    font-size: 0.9rem;
+    min-width: 70px;
+    text-align: left;
+    margin-right: 4px;
+}
+
+.savingIndicator {
+    color: var(--color-text-secondary);
+}
+
+.savedIndicator {
+    color: var(--color-success, #28a745);
 }
 
 .slider {
@@ -80,4 +105,46 @@ input:checked + .slider {
 
 input:checked + .slider:before {
     transform: translateX(26px);
-} 
+}
+
+/* Timer Settings Styles */
+.settingGroup {
+    margin-top: 2rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--color-border);
+}
+
+.settingGroup h2 {
+    margin-bottom: 1rem;
+    color: var(--color-text-primary);
+    font-size: 1.2rem;
+}
+
+.numberInput {
+    width: 80px;
+    padding: 8px;
+    border: 1px solid var(--color-border);
+    border-radius: 4px;
+    font-size: 1rem;
+    text-align: center;
+    transition: border-color 0.2s ease;
+    margin-left: 0;
+}
+
+.numberInput:focus {
+    border-color: var(--color-primary);
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(var(--color-primary-rgb), 0.2);
+}
+
+.numberInput:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 2px rgba(var(--color-primary-rgb), 0.2);
+}
+
+.numberInput::-webkit-inner-spin-button,
+.numberInput::-webkit-outer-spin-button {
+    opacity: 1;
+    height: 24px;
+}
