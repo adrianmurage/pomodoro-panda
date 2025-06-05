@@ -10,6 +10,7 @@ import { DEFAULT_TIMER_SETTINGS } from '../constants/timerConstants';
 import { TimerProvider } from '../contexts/TimerContext';
 import { useLogger } from '../hooks/useLogger';
 import { NotificationState, Task } from '../types';
+import { CompletedTaskRecord } from '../types/database';
 import { tasksDB } from '../utils/database';
 import { settingsDB } from '../utils/database';
 
@@ -18,7 +19,7 @@ function Home() {
     const [notification, setNotification] = useState<NotificationState | null>(
         null
     );
-    const [completedTasks, setCompletedTasks] = useState<Task[]>([]);
+    const [completedTasks, setCompletedTasks] = useState<CompletedTaskRecord[]>([]);
     const [showBanner, setShowBanner] = useState<boolean>(false);
 
     const homePageLogger = useLogger('Home');
@@ -95,7 +96,7 @@ function Home() {
 
         try {
             // Get user's preference for task position
-            const addToBottom = await settingsDB.get('addTasksToBottom');
+            const addToBottom = await settingsDB.getSetting('addTasksToBottom');
             
             await tasksDB.add(newTask);
             setTasks((prev) => addToBottom ? [...prev, newTask] : [newTask, ...prev]);
@@ -117,7 +118,10 @@ function Home() {
         setTasks(reorderedTasks);
 
         try {
-            await tasksDB.updateAll(reorderedTasks);
+            // Update each task's order
+            await Promise.all(reorderedTasks.map((task, index) => 
+              tasksDB.update(task.id, { ...task, order: index })
+            ));
         } catch (error) {
             homePageLogger.error('Failed to persist task order:', error);
             setTasks(previousTasks);
@@ -148,7 +152,7 @@ function Home() {
             if (!task) return;
 
             const updatedTask = { ...task, pomodoros: count };
-            await tasksDB.update(updatedTask);
+            await tasksDB.update(taskId, updatedTask);
             setTasks((prev) =>
                 prev.map((t) => (t.id === taskId ? updatedTask : t))
             );
@@ -178,7 +182,7 @@ function Home() {
                 description,
             };
 
-            await tasksDB.update(updatedTask);
+            await tasksDB.update(taskId, updatedTask);
             setTasks((prev) =>
                 prev.map((t) => (t.id === taskId ? updatedTask : t))
             );
@@ -233,7 +237,7 @@ function Home() {
             };
 
             try {
-                await tasksDB.update(updatedTask);
+                await tasksDB.update(existingTask.id, updatedTask);
                 setTasks((prev) =>
                     prev.map((t) =>
                         t.id === existingTask.id ? updatedTask : t
@@ -316,6 +320,8 @@ function Home() {
                 category,
                 description,
                 duration,
+                pomodorosCompleted: (task as CompletedTaskRecord).pomodorosCompleted,
+                endTime: (task as CompletedTaskRecord).endTime,
             };
 
             await tasksDB.updateCompletedTask(updatedTask);

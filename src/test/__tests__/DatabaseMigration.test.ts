@@ -1,5 +1,8 @@
 import { describe, test, expect, afterEach } from 'vitest';
-import { initDB, SETTINGS_STORE } from '../../utils/database';
+import { initDB } from '../../utils/database';
+import { STORE_NAMES } from '../../types/database';
+
+const { SETTINGS } = STORE_NAMES;
 
 describe('Database Migration Tests', () => {
     afterEach(async () => {
@@ -11,11 +14,11 @@ describe('Database Migration Tests', () => {
         const db = await initDB();
         
         // Verify settings store exists
-        expect(db.objectStoreNames.contains(SETTINGS_STORE)).toBe(true);
+        expect(db.objectStoreNames.contains(STORE_NAMES.SETTINGS)).toBe(true);
         
         // Verify store configuration
-        const transaction = db.transaction([SETTINGS_STORE], 'readonly');
-        const store = transaction.objectStore(SETTINGS_STORE);
+        const transaction = db.transaction([STORE_NAMES.SETTINGS], 'readonly');
+        const store = transaction.objectStore(SETTINGS);
         
         // Check keyPath configuration
         expect(store.keyPath).toBe('id');
@@ -27,8 +30,8 @@ describe('Database Migration Tests', () => {
         // Initialize database and add test data
         const initialDb = await initDB();
         await new Promise<void>((resolve, reject) => {
-            const transaction = initialDb.transaction([SETTINGS_STORE], 'readwrite');
-            const store = transaction.objectStore(SETTINGS_STORE);
+            const transaction = initialDb.transaction([SETTINGS], 'readwrite');
+            const store = transaction.objectStore(SETTINGS);
             store.put({ id: 'testSetting', value: true });
             
             transaction.oncomplete = () => resolve();
@@ -40,8 +43,8 @@ describe('Database Migration Tests', () => {
         const migratedDb = await initDB();
         
         // Verify data survived migration
-        const transaction = migratedDb.transaction([SETTINGS_STORE], 'readonly');
-        const store = transaction.objectStore(SETTINGS_STORE);
+        const transaction = migratedDb.transaction([SETTINGS], 'readonly');
+        const store = transaction.objectStore(SETTINGS);
         
         const request = store.get('testSetting');
         const result = await new Promise((resolve) => {

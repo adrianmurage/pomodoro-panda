@@ -4,6 +4,7 @@ import { CompletedTasksList } from '../components/Tasks/CompletedTasksList';
 import { Notification } from '../components/Notification';
 import { useLogger } from '../hooks/useLogger';
 import { Task, NotificationState } from '../types';
+import { CompletedTaskRecord } from '../types/database';
 import { tasksDB } from '../utils/database';
 import styles from './Stats.module.css';
 
@@ -30,7 +31,7 @@ const formatTotalDuration = (milliseconds: number): string => {
 };
 
 function Stats() {
-    const [completedTasks, setCompletedTasks] = useState<Task[]>([]);
+    const [completedTasks, setCompletedTasks] = useState<CompletedTaskRecord[]>([]);
     const [notification, setNotification] = useState<NotificationState | null>(
         null
     );
@@ -101,7 +102,7 @@ function Stats() {
                     ...existingTask,
                     pomodoros: (existingTask.pomodoros || 1) + (pomodoros || 1),
                 };
-                await tasksDB.update(updatedTask);
+                await tasksDB.update(existingTask.id, updatedTask);
 
                 setNotification({
                     message:
@@ -161,6 +162,8 @@ function Stats() {
                 category,
                 description,
                 duration,
+                pomodorosCompleted: taskToEdit.pomodorosCompleted,
+                endTime: taskToEdit.endTime,
             };
 
             await tasksDB.updateCompletedTask(updatedTask);

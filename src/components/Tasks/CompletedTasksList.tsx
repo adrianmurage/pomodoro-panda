@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
-import { Task } from '../../types';
+import { CompletedTaskRecord } from '../../types/database';
 import styles from './Tasks.module.css';
 import completedStyles from './CompletedTasksList.module.css';
 import { CompletedTaskMenu } from './CompletedTaskMenu';
@@ -9,7 +9,7 @@ import { CompletedTasksSummary } from './CompletedTasksSummary';
 import { useLogger } from '../../hooks/useLogger';
 
 interface CompletedTasksListProps {
-  tasks: Task[];
+  tasks: CompletedTaskRecord[];
   onRepeatTask: (category: string, description: string, pomodoros?: number) => void;
   onEditCompletedTask?: (taskId: string, category: string, description: string, duration: number) => void;
   onDeleteCompletedTask?: (taskId: string) => void;
@@ -40,8 +40,8 @@ export const CompletedTasksList: React.FC<CompletedTasksListProps> = ({
 
   if (tasks.length === 0) return null;
 
-  const handleRepeat = (task: Task) => {
-    onRepeatTask(task.category, task.description, task.pomodoros || 1);
+  const handleRepeat = (task: CompletedTaskRecord) => {
+    onRepeatTask(task.category, task.description, task.pomodorosCompleted);
   };
 
   const handleMenuToggle = (taskId: string) => {

@@ -1,4 +1,5 @@
 import { Task, TimerSettings } from '../types';
+import { CompletedTaskRecord } from '../types/database';
 import { DEFAULT_TIMER_SETTINGS } from '../constants/timerConstants';
 
 export const calculateEstimatedCompletion = (
@@ -68,7 +69,7 @@ export const calculateTotalDuration = (
 }; 
 
 export const calculateCompletedDuration = (
-    tasks: Task[],
+    tasks: Task[] | CompletedTaskRecord[],
 ): { hours: number; minutes: number } => {
     let totalMinutes = 0;
 
@@ -82,4 +83,4 @@ export const calculateCompletedDuration = (
         hours: Math.floor(totalMinutes / 60),
         minutes: Math.round(totalMinutes % 60)
     };
-}; 
+};

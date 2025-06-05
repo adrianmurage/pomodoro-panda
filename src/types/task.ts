@@ -1,4 +1,5 @@
 import type { TimerSettings } from './timer';
+import type { CompletedTaskRecord } from './database';
 
 export interface Task {
   id: string;
@@ -62,12 +63,12 @@ export interface CompletionIndicatorProps {
 }
 
 export interface TaskSummaryProps {
-  tasks: Task[];
+  tasks: Task[] | CompletedTaskRecord[];
   settings?: TimerSettings;
 }
 
 export interface CompletedTasksListProps {
-  tasks: Task[];
+  tasks: CompletedTaskRecord[];
   onRepeatTask: (category: string, description: string, pomodoros?: number) => void;
   onEditCompletedTask?: (taskId: string, category: string, description: string, duration: number) => void;
   onDeleteCompletedTask?: (taskId: string) => void;

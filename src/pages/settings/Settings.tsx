@@ -7,6 +7,7 @@ import { settingsDB } from "../../utils/database";
 import { DEFAULT_TIMER_SETTINGS } from "../../constants/timerConstants";
 import { TimerSettingInput } from "./TimerSettingInput";
 import { TimerSettings } from "../../types/timer";
+import { SettingKey } from "../../types/database";
 
 interface UserSettings extends TimerSettings {
   addTasksToBottom?: boolean;
@@ -41,7 +42,7 @@ const SettingsPage = () => {
     async function loadSettings() {
       try {
         const [addTasksToBottom, timerSettings] = await Promise.all([
-          settingsDB.get<boolean>("addTasksToBottom"),
+          settingsDB.getSetting<boolean>("addTasksToBottom"),
           settingsDB.getTimerSettings(),
         ]);
 
@@ -53,8 +54,6 @@ const SettingsPage = () => {
           sessionsUntilLongBreak: timerSettings.sessionsUntilLongBreak || DEFAULT_TIMER_SETTINGS.sessionsUntilLongBreak,
           addTasksToBottom: addTasksToBottom ?? false,
         };
-        
-
 
         setSettings(validSettings);
         setLocalSettings(validSettings);
@@ -71,14 +70,13 @@ const SettingsPage = () => {
   const handleToggleTaskPosition = useCallback(async () => {
     const newValue = !settings.addTasksToBottom;
     try {
-      await settingsDB.set("addTasksToBottom", newValue);
+      await settingsDB.setSetting<boolean>("addTasksToBottom" as SettingKey, newValue);
       setSettings((prev) => ({
         ...prev,
         addTasksToBottom: newValue,
       }));
 
       if (!posthog.has_opted_in_capturing()) {
-
         return;
       }
       try {
@@ -86,7 +84,6 @@ const SettingsPage = () => {
           setting: "addTasksToBottom",
           value: newValue,
         });
-
       } catch (error) {
         logger.warn(
           "Failed to capture analytics for task position setting update:",
@@ -145,12 +142,10 @@ const SettingsPage = () => {
             updateSaveStatus(setting, { saving: false, saved: true });
 
             if (!posthog.has_opted_in_capturing()) {
-
               return;
             }
             try {
               posthog.capture("settings_updated", { setting, value });
-
             } catch (error) {
               logger.warn(
                 "Failed to capture analytics for timer setting update:",
@@ -169,14 +164,12 @@ const SettingsPage = () => {
   );
 
   const handleTimerSettingChange = useCallback(
-    (setting: keyof UserSettings, value: string) => {
+    (setting: keyof TimerSettings | 'addTasksToBottom', value: string) => {
       // Parse input value as minutes
       const numValue = parseInt(value, 10) || 0;
       
       // Convert minutes to milliseconds for duration settings
       const valueToStore = setting.includes('Duration') ? numValue * 60 * 1000 : numValue;
-
-
 
       // Update both states to keep them in sync
       setSettings(prev => ({
@@ -248,8 +241,6 @@ const SettingsPage = () => {
               Object.keys(DEFAULT_TIMER_SETTINGS).forEach(key => {
                 updateSaveStatus(key, { saving: false, saved: true });
               });
-
-
             }}
           >
             Reset to Default
