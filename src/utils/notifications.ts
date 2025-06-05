@@ -1,4 +1,4 @@
-import type { TimerType } from '../constants/timerConstants';
+import type { TimerMode } from '../types/timer';
 import { NOTIFICATION_MESSAGES } from '../constants/timerConstants';
 
 
@@ -21,7 +21,7 @@ export const initializeNotifications = async () => {
   return false;
 };
 
-export const showNotification = (timerType: TimerType) => {
+export const showNotification = (timerType: TimerMode) => {
 
   if (Notification.permission === "granted") {
     new Notification("Pomodoro Timer", {

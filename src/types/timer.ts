@@ -1,5 +1,6 @@
-import type { TimerType } from '../constants/timerConstants';
 import type { Task } from './task';
+
+export type TimerMode = 'work' | 'break' | 'longBreak';
 
 // Timer settings
 export interface TimerSettings {
@@ -14,7 +15,7 @@ export interface TimerState {
   timeLeft: number;
   isRunning: boolean;
   hasStarted: boolean;
-  timerType: TimerType;
+  timerType: TimerMode;
   activeTaskId: string | null;
   startTime: number | null;
   expectedEndTime: number | undefined;
@@ -27,7 +28,7 @@ export interface TimerState {
 // Define action types
 export type TimerAction =
   | { type: 'UPDATE_TIMER_STATE'; payload: Partial<TimerState> }
-  | { type: 'START_BREAK'; payload: { startTime: number; expectedEndTime: number; duration: number; timerType: TimerType } }
+  | { type: 'START_BREAK'; payload: { startTime: number; expectedEndTime: number; duration: number; timerType: TimerMode } }
   | { type: 'START_TIMER'; payload?: { startTime?: number; expectedEndTime?: number; activeTaskId?: string } }
   | { type: 'PAUSE_TIMER' }
   | { type: 'UPDATE_TIME_LEFT'; payload: { timeLeft: number } };
@@ -36,10 +37,10 @@ export type TimerAction =
 
 export interface TimerContextType {
   state: TimerState;
-  startBreak: (breakType: TimerType) => void;
+  startBreak: (breakType: TimerMode) => void;
   startTimer: (task: Task) => void;
   pauseTimer: () => void;
-  resetTimer: ()=> void;
+  resetTimer: () => void;
   switchTimer: () => void;
   setOnComplete: (callback: (state: TimerState) => void) => void;
   settings: TimerSettings;
@@ -73,9 +74,9 @@ export interface TimerControlsProps {
   onPause: () => void;
   onStop: () => void;
   onDone: () => void;
+  onSkip?: () => void;
   disableWorkTimer?: boolean;
-  timerType: TimerType;
-  onSkip: () => void;
+  timerType: TimerMode;
 }
 
 // Hook props

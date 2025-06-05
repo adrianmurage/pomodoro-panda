@@ -353,7 +353,16 @@ function Home() {
     };
 
     const handleDismissBanner = () => {
-        posthog.capture('stats_banner_dismissed');
+        if (!posthog.has_opted_in_capturing()) {
+            homePageLogger.debug('Analytics disabled - skipping event capture for banner dismissal');
+        } else {
+            try {
+                posthog.capture('stats_banner_dismissed');
+                homePageLogger.debug('Analytics event captured for banner dismissal');
+            } catch (error) {
+                homePageLogger.warn('Failed to capture analytics for banner dismissal:', error);
+            }
+        }
         setShowBanner(false);
         // Store the preference in localStorage
         let currentCount = localStorage.getItem('statsBannerDismissed');

@@ -1,7 +1,21 @@
 import React from 'react';
-import { TimerControlsProps } from '../../types';
+import type { TimerMode } from '../../types/timer';
 import { TIMER_TYPES } from '../../constants/timerConstants';
 import styles from './Timer.module.css';
+
+interface TimerControlsProps {
+  isPaused: boolean;
+  hasStarted: boolean;
+  onPause: () => void;
+  onResume: () => void;
+  onStart: () => void;
+  onBreak: () => void;
+  onDone: () => void;
+  onStop: () => void;
+  onSkip?: () => void;
+  disableWorkTimer?: boolean;
+  timerType: TimerMode;
+}
 
 export const TimerControls: React.FC<TimerControlsProps> = ({
   isPaused,
@@ -14,8 +28,8 @@ export const TimerControls: React.FC<TimerControlsProps> = ({
   onSkip,
   onBreak,
   disableWorkTimer = false,
-  timerType
-}) => {
+  timerType,
+}: TimerControlsProps) => {
   const renderPrimaryButton = () => {
     if (!hasStarted) {
       return (

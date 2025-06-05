@@ -4,18 +4,20 @@ import React, {
     useEffect,
     useReducer,
     useRef,
+    useState,
 } from 'react';
 import {
     DEFAULT_TIMER_SETTINGS,
     TIMER_TYPES,
-    type TimerType,
 } from '../constants/timerConstants';
+import { settingsDB } from '../utils/database';
 import type { Task } from '../types/task';
 import type {
     TimerAction,
     TimerContextType,
     TimerSettings,
     TimerState,
+    TimerMode,
 } from '../types/timer';
 
 const initialState: TimerState = {
@@ -79,8 +81,12 @@ const TimerContext = createContext<TimerContextType | null>(null);
 export const TimerProvider: React.FC<{
     children: React.ReactNode;
     settings?: TimerSettings;
-}> = ({ children, settings = DEFAULT_TIMER_SETTINGS }) => {
-    const [state, dispatch] = useReducer(timerReducer, initialState);
+}> = ({ children, settings: initialSettings = DEFAULT_TIMER_SETTINGS }) => {
+    const [settings, setSettings] = useState(initialSettings);
+    const [state, dispatch] = useReducer(timerReducer, {
+        ...initialState,
+        timeLeft: initialSettings.workDuration,
+    });
 
     // Animation frame reference
     const animationFrameRef = useRef<number | undefined>(undefined);
@@ -186,7 +192,7 @@ export const TimerProvider: React.FC<{
     );
 
     const startBreak = useCallback(
-        (breakType: TimerType) => {
+        (breakType: TimerMode) => {
             const now = Date.now();
             if (breakType === TIMER_TYPES.BREAK) {
                 dispatch({
@@ -195,7 +201,7 @@ export const TimerProvider: React.FC<{
                         startTime: now,
                         expectedEndTime: now + settings.breakDuration ,
                         duration: settings.breakDuration ,
-                        timerType: TIMER_TYPES.BREAK,
+                        timerType: TIMER_TYPES.BREAK as TimerMode,
                     },
                 });
             } else if (breakType === TIMER_TYPES.LONG_BREAK) {
@@ -206,7 +212,7 @@ export const TimerProvider: React.FC<{
                         expectedEndTime:
                             now + settings.longBreakDuration ,
                         duration: settings.longBreakDuration ,
-                        timerType: TIMER_TYPES.LONG_BREAK,
+                        timerType: TIMER_TYPES.LONG_BREAK as TimerMode,
                     },
                 });
             }
@@ -267,15 +273,15 @@ export const TimerProvider: React.FC<{
 
         if (nextTimer.type === TIMER_TYPES.WORK) {
             payload.timeLeft = settings.workDuration;
-            payload.timerType = TIMER_TYPES.WORK;
+            payload.timerType = TIMER_TYPES.WORK as TimerMode;
             payload.sessionsCompleted = state.sessionsCompleted + 1;
         } else if (nextTimer.type === TIMER_TYPES.BREAK) {
             payload.timeLeft = settings.breakDuration;
-            payload.timerType = TIMER_TYPES.BREAK;
+            payload.timerType = TIMER_TYPES.BREAK as TimerMode;
             payload.sessionsCompleted = state.sessionsCompleted;
         } else if (nextTimer.type === TIMER_TYPES.LONG_BREAK) {
             payload.timeLeft = settings.longBreakDuration;
-            payload.timerType = TIMER_TYPES.LONG_BREAK;
+            payload.timerType = TIMER_TYPES.LONG_BREAK as TimerMode;
             payload.sessionsCompleted = state.sessionsCompleted;
         }
 
@@ -290,6 +296,24 @@ export const TimerProvider: React.FC<{
         settings.workDuration,
         state.sessionsCompleted,
     ]);
+
+    // Load settings from database
+    useEffect(() => {
+        async function loadSettings() {
+            const savedSettings = await settingsDB.getTimerSettings();
+            if (savedSettings) {
+                setSettings(savedSettings);
+                if (!state.hasStarted) {
+                    // Only update timeLeft if timer hasn't started
+                    dispatch({
+                        type: 'UPDATE_TIMER_STATE',
+                        payload: { timeLeft: savedSettings.workDuration }
+                    });
+                }
+            }
+        }
+        loadSettings();
+    }, [dispatch, state.hasStarted]);
 
     const value = {
         state,
