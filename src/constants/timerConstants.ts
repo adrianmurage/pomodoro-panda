@@ -7,9 +7,9 @@ export const TIMER_TYPES: Record<string, TimerMode> = {
 } as const;
 
 export const DEFAULT_TIMER_SETTINGS = {
-  workDuration: 1 * 60 * 1000, // 90 minutes
-  breakDuration: 0.5 * 60 * 1000, // 30 minutes
-  longBreakDuration: 0.7 * 60 * 1000, // 60 minutes
+  workDuration: 25 * 60 * 1000, // 25 minutes (standard Pomodoro duration)
+  breakDuration: 5 * 60 * 1000, // 5 minutes (standard short break)
+  longBreakDuration: 15 * 60 * 1000, // 15 minutes (standard long break)
   sessionsUntilLongBreak: 4,
 } as const;
 

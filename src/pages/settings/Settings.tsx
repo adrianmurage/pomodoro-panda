@@ -7,12 +7,8 @@ import { settingsDB } from "../../utils/database";
 import { DEFAULT_TIMER_SETTINGS } from "../../constants/timerConstants";
 import { TimerSettingInput } from "./TimerSettingInput";
 
-interface UserSettings {
-  addTasksToBottom: boolean;
-  workDuration: number;
-  breakDuration: number;
-  longBreakDuration: number;
-  sessionsUntilLongBreak: number;
+interface UserSettings extends TimerSettings {
+  addTasksToBottom?: boolean;
 }
 
 interface SaveStatus {
@@ -26,7 +22,7 @@ interface SaveStatus {
 const SettingsPage = () => {
   const logger = useLogger("Settings");
   const [settings, setSettings] = useState<UserSettings>({
-    addTasksToBottom: false,
+    ...DEFAULT_TIMER_SETTINGS,
     workDuration: DEFAULT_TIMER_SETTINGS.workDuration,
     breakDuration: DEFAULT_TIMER_SETTINGS.breakDuration,
     longBreakDuration: DEFAULT_TIMER_SETTINGS.longBreakDuration,
@@ -35,7 +31,7 @@ const SettingsPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>({});
   const [localSettings, setLocalSettings] = useState<UserSettings>({
-    addTasksToBottom: false,
+    ...DEFAULT_TIMER_SETTINGS,
     workDuration: DEFAULT_TIMER_SETTINGS.workDuration,
     breakDuration: DEFAULT_TIMER_SETTINGS.breakDuration,
     longBreakDuration: DEFAULT_TIMER_SETTINGS.longBreakDuration,
@@ -54,13 +50,39 @@ const SettingsPage = () => {
           settingsDB.getTimerSettings(),
         ]);
 
-        const newSettings = {
-          ...DEFAULT_TIMER_SETTINGS,
+        // Ensure we have valid settings with correct millisecond values
+        const validSettings = {
+          workDuration: timerSettings.workDuration || DEFAULT_TIMER_SETTINGS.workDuration,
+          breakDuration: timerSettings.breakDuration || DEFAULT_TIMER_SETTINGS.breakDuration,
+          longBreakDuration: timerSettings.longBreakDuration || DEFAULT_TIMER_SETTINGS.longBreakDuration,
+          sessionsUntilLongBreak: timerSettings.sessionsUntilLongBreak || DEFAULT_TIMER_SETTINGS.sessionsUntilLongBreak,
           addTasksToBottom: addTasksToBottom ?? false,
-          ...(timerSettings || {}),
         };
-        setSettings(newSettings);
-        setLocalSettings(newSettings);
+        
+        // Log the timer settings in an easy to read format
+        logger.info("Timer Settings Loaded:", {
+          stored: {
+            workDuration: `${Math.floor(timerSettings?.workDuration / (60 * 1000))} minutes`,
+            breakDuration: `${Math.floor(timerSettings?.breakDuration / (60 * 1000))} minutes`,
+            longBreakDuration: `${Math.floor(timerSettings?.longBreakDuration / (60 * 1000))} minutes`,
+            sessionsUntilLongBreak: timerSettings?.sessionsUntilLongBreak
+          },
+          defaults: {
+            workDuration: `${Math.floor(DEFAULT_TIMER_SETTINGS.workDuration / (60 * 1000))} minutes`,
+            breakDuration: `${Math.floor(DEFAULT_TIMER_SETTINGS.breakDuration / (60 * 1000))} minutes`,
+            longBreakDuration: `${Math.floor(DEFAULT_TIMER_SETTINGS.longBreakDuration / (60 * 1000))} minutes`,
+            sessionsUntilLongBreak: DEFAULT_TIMER_SETTINGS.sessionsUntilLongBreak
+          },
+          final: {
+            workDuration: `${Math.floor(validSettings.workDuration / (60 * 1000))} minutes`,
+            breakDuration: `${Math.floor(validSettings.breakDuration / (60 * 1000))} minutes`,
+            longBreakDuration: `${Math.floor(validSettings.longBreakDuration / (60 * 1000))} minutes`,
+            sessionsUntilLongBreak: validSettings.sessionsUntilLongBreak
+          }
+        });
+
+        setSettings(validSettings);
+        setLocalSettings(validSettings);
         setIsLoading(false);
       } catch (error) {
         logger.error("Failed to load settings:", error);
@@ -185,31 +207,35 @@ const SettingsPage = () => {
 
   const handleTimerSettingChange = useCallback(
     (setting: keyof UserSettings, value: string) => {
-      let numValue = parseInt(value, 10);
+      // Parse input value as minutes
+      let numValue = parseInt(value, 10) || 0;
       
       // Convert minutes to milliseconds for duration settings
-      if (setting.includes('Duration')) {
-          numValue = numValue * 60 * 1000;
-      }
+      const valueToStore = setting.includes('Duration') ? numValue * 60 * 1000 : numValue;
 
-      // Update local state immediately for UI responsiveness
+      logger.info(`Setting ${setting} to ${numValue} minutes (${valueToStore} ms)`);
+
+      // Update both states to keep them in sync
+      setSettings(prev => ({
+          ...prev,
+          [setting]: valueToStore,
+      }));
       setLocalSettings(prev => ({
           ...prev,
-          [setting]: numValue,
-          addTasksToBottom: prev.addTasksToBottom // Preserve boolean value
+          [setting]: valueToStore,
       }));
 
       // Debounce the actual save
       const debouncedSaver = createDebouncedSave(setting);
       if (debouncedSaver) {
-          debouncedSaver(numValue);
-          // Don't show immediate saving status - the debounced save will handle this
-          updateSaveStatus(setting, { saving: false, saved: false });
+          debouncedSaver(valueToStore);
+          // Show saving status
+          updateSaveStatus(setting, { saving: true, saved: false });
       } else {
           logger.error('Failed to create debounced save function');
       }
     },
-    [createDebouncedSave, setLocalSettings, updateSaveStatus, logger]
+    [createDebouncedSave, setSettings, setLocalSettings, updateSaveStatus, logger]
   );
 
   if (isLoading) {
@@ -240,9 +266,37 @@ const SettingsPage = () => {
 
         <div className={styles.settingGroup}>
           <h2>Timer Settings</h2>
+          <button 
+            className={styles.resetButton}
+            onClick={() => {
+              const defaultValues = {
+                ...DEFAULT_TIMER_SETTINGS,
+                workDuration: DEFAULT_TIMER_SETTINGS.workDuration,
+                breakDuration: DEFAULT_TIMER_SETTINGS.breakDuration,
+                longBreakDuration: DEFAULT_TIMER_SETTINGS.longBreakDuration,
+                sessionsUntilLongBreak: DEFAULT_TIMER_SETTINGS.sessionsUntilLongBreak,
+              };
+
+              // Update both local and main settings state
+              setLocalSettings(defaultValues);
+              setSettings(defaultValues);
+              
+              // Save default values to database
+              settingsDB.setTimerSettings(DEFAULT_TIMER_SETTINGS);
+              
+              // Show success message
+              Object.keys(DEFAULT_TIMER_SETTINGS).forEach(key => {
+                updateSaveStatus(key, { saving: false, saved: true });
+              });
+
+              logger.info("Settings reset to defaults");
+            }}
+          >
+            Reset to Default
+          </button>
           <TimerSettingInput
             label="Work Duration (minutes)"
-            value={Math.floor((localSettings?.workDuration ?? settings.workDuration) / (60 * 1000))}
+            value={Math.max(1, Math.floor(settings.workDuration / (60 * 1000)))}
             min={1}
             max={60}
             saving={saveStatus.workDuration?.saving}
@@ -250,11 +304,11 @@ const SettingsPage = () => {
             onChange={(value) =>
               handleTimerSettingChange("workDuration", value)
             }
-            isMinutes={true}
+            isMinutes={false}
           />
           <TimerSettingInput
             label="Short Break Duration (minutes)"
-            value={Math.floor((localSettings?.breakDuration ?? settings.breakDuration) / (60 * 1000))}
+            value={Math.max(1, Math.floor(settings.breakDuration / (60 * 1000)))}
             min={1}
             max={30}
             saving={saveStatus.breakDuration?.saving}
@@ -262,13 +316,11 @@ const SettingsPage = () => {
             onChange={(value) =>
               handleTimerSettingChange("breakDuration", value)
             }
-            isMinutes={true}
+            isMinutes={false}
           />
           <TimerSettingInput
             label="Long Break Duration (minutes)"
-            value={
-              Math.floor((localSettings?.longBreakDuration ?? settings.longBreakDuration) / (60 * 1000))
-            }
+            value={Math.max(1, Math.floor(settings.longBreakDuration / (60 * 1000)))}
             min={1}
             max={60}
             saving={saveStatus.longBreakDuration?.saving}
@@ -276,7 +328,7 @@ const SettingsPage = () => {
             onChange={(value) =>
               handleTimerSettingChange("longBreakDuration", value)
             }
-            isMinutes={true}
+            isMinutes={false}
           />
           <TimerSettingInput
             label="Sessions Until Long Break"

@@ -446,6 +446,8 @@ export const settingsDB = {
   // Timer settings helpers
   async getTimerSettings(): Promise<TimerSettings> {
     try {
+      dbLogger.info("Retrieving timer settings from database...");
+      
       const workDuration =
         (await this.get<number>("workDuration")) ?? DEFAULT_TIMER_SETTINGS.workDuration;
       const breakDuration =
@@ -457,15 +459,44 @@ export const settingsDB = {
       const sessionsUntilLongBreak =
         (await this.get<number>("sessionsUntilLongBreak")) ??
         DEFAULT_TIMER_SETTINGS.sessionsUntilLongBreak;
-
-      return {
+        
+      // Log raw values from database
+      dbLogger.info("Raw values from database:", {
         workDuration,
         breakDuration,
         longBreakDuration,
-        sessionsUntilLongBreak,
+        sessionsUntilLongBreak
+      });
+
+      // Convert any values that might be in minutes to milliseconds
+      const convertToMs = (value: number | null | undefined, defaultMs: number): number => {
+        if (value === null || value === undefined) return defaultMs;
+        // If value is small (less than 1000), assume it's in minutes
+        return value < 1000 ? value * 60 * 1000 : value;
       };
+
+      // Ensure all duration values are in milliseconds
+      const normalizedSettings = {
+        workDuration: convertToMs(workDuration, DEFAULT_TIMER_SETTINGS.workDuration),
+        breakDuration: convertToMs(breakDuration, DEFAULT_TIMER_SETTINGS.breakDuration),
+        longBreakDuration: convertToMs(longBreakDuration, DEFAULT_TIMER_SETTINGS.longBreakDuration),
+        sessionsUntilLongBreak: sessionsUntilLongBreak ?? DEFAULT_TIMER_SETTINGS.sessionsUntilLongBreak,
+      };
+
+      dbLogger.info("Retrieved timer settings:", {
+        raw: normalizedSettings,
+        inMinutes: {
+          workDuration: `${Math.floor(normalizedSettings.workDuration / (60 * 1000))} minutes`,
+          breakDuration: `${Math.floor(normalizedSettings.breakDuration / (60 * 1000))} minutes`,
+          longBreakDuration: `${Math.floor(normalizedSettings.longBreakDuration / (60 * 1000))} minutes`,
+          sessionsUntilLongBreak: normalizedSettings.sessionsUntilLongBreak
+        }
+      });
+
+      const settings = normalizedSettings;
+      return settings;
     } catch (error) {
-      console.error("Failed to get timer settings:", error);
+      dbLogger.error("Failed to get timer settings:", error);
       return DEFAULT_TIMER_SETTINGS;
     }
   },
@@ -473,14 +504,29 @@ export const settingsDB = {
   async setTimerSettings(settings: Partial<TimerSettings>): Promise<void> {
     const updates: Promise<void>[] = [];
 
+    // Ensure all duration values are in milliseconds
+    // Log incoming settings before conversion
+    dbLogger.info("Setting timer settings with values:", settings);
+
+    const ensureMilliseconds = (value: number): number => {
+      if (value < 1000) {
+        dbLogger.info(`Converting ${value} minutes to milliseconds`);
+        return value * 60 * 1000;
+      }
+      return value;
+    };
+
     if (settings.workDuration !== undefined) {
-      updates.push(this.set("workDuration", settings.workDuration));
+      const workDuration = ensureMilliseconds(settings.workDuration);
+      updates.push(this.set("workDuration", workDuration));
     }
     if (settings.breakDuration !== undefined) {
-      updates.push(this.set("breakDuration", settings.breakDuration));
+      const breakDuration = ensureMilliseconds(settings.breakDuration);
+      updates.push(this.set("breakDuration", breakDuration));
     }
     if (settings.longBreakDuration !== undefined) {
-      updates.push(this.set("longBreakDuration", settings.longBreakDuration));
+      const longBreakDuration = ensureMilliseconds(settings.longBreakDuration);
+      updates.push(this.set("longBreakDuration", longBreakDuration));
     }
     if (settings.sessionsUntilLongBreak !== undefined) {
       updates.push(
@@ -489,5 +535,17 @@ export const settingsDB = {
     }
 
     await Promise.all(updates);
+      
+    // Log final settings after all updates
+    const finalSettings = await this.getTimerSettings();
+    dbLogger.info("Timer settings updated successfully:", {
+      milliseconds: finalSettings,
+      minutes: {
+        workDuration: Math.floor(finalSettings.workDuration / (60 * 1000)),
+        breakDuration: Math.floor(finalSettings.breakDuration / (60 * 1000)),
+        longBreakDuration: Math.floor(finalSettings.longBreakDuration / (60 * 1000)),
+        sessionsUntilLongBreak: finalSettings.sessionsUntilLongBreak
+      }
+    });
   },
 };
