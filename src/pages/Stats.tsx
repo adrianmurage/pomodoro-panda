@@ -41,15 +41,11 @@ function Stats() {
      */
     useEffect(() => {
         async function loadCompletedTasks() {
-            statsPageLogger.info('Fetching all completed tasks...');
             try {
                 const tasks = await tasksDB.getCompletedTasks();
                 setCompletedTasks(tasks);
-                statsPageLogger.info(
-                    `Successfully fetched ${tasks.length} completed tasks.`
-                );
             } catch (error) {
-                statsPageLogger.error('Failed to load completed tasks:', error);
+                statsPageLogger.error('Failed to load completed tasks', { error });
                 setNotification({
                     message: 'Failed to load completed tasks',
                     type: 'error',
@@ -65,22 +61,20 @@ function Stats() {
      * @returns The total number of pomodoros completed.
      */
     const totalPomodoros = useMemo(() => {
-        statsPageLogger.info('Calculating total completed pomodoros');
         return completedTasks.length;
-    }, [completedTasks, statsPageLogger]);
+    }, [completedTasks]);
 
     /**
      * Formats the total time spent on completed tasks.
      * @returns A string of hours and minutes, or '0m' if the duration is 0 milliseconds.
      */
     const formattedTotalTimeSpent = useMemo(() => {
-        statsPageLogger.info('Calculating total time spent on completed tasks');
         const totalDurationMs = completedTasks.reduce(
             (sum, task) => sum + (task.duration || 0),
             0
         );
         return formatTotalDuration(totalDurationMs);
-    }, [completedTasks, statsPageLogger]);
+    }, [completedTasks]);
 
     /**
      * Repeats a task.
@@ -93,11 +87,7 @@ function Stats() {
         description: string,
         pomodoros: number = 1
     ) => {
-        statsPageLogger.info('Repeating task:', {
-            category,
-            description,
-            pomodoros,
-        });
+
         try {
             // Check for existing active task with same category and description
             const activeTasks = await tasksDB.getAll();
@@ -112,10 +102,7 @@ function Stats() {
                     pomodoros: (existingTask.pomodoros || 1) + (pomodoros || 1),
                 };
                 await tasksDB.update(updatedTask);
-                statsPageLogger.info(
-                    'Added pomodoro to existing active task:',
-                    updatedTask
-                );
+
                 setNotification({
                     message:
                         'Added pomodoro to existing task on the Home page.',
@@ -132,14 +119,14 @@ function Stats() {
                     // order will be set by tasksDB.add
                 };
                 await tasksDB.add(newTask);
-                statsPageLogger.info('Added new task to active list:', newTask);
+
                 setNotification({
                     message: 'Task added to the Home page.',
                     type: 'success',
                 });
             }
         } catch (error) {
-            statsPageLogger.error('Failed to repeat task:', error);
+            statsPageLogger.error('Failed to repeat task', { error });
             setNotification({
                 message: 'Failed to repeat task',
                 type: 'error',
@@ -160,16 +147,11 @@ function Stats() {
         description: string,
         duration: number
     ) => {
-        statsPageLogger.info('Editing completed task:', {
-            taskId,
-            category,
-            description,
-            duration,
-        });
+
         try {
             const taskToEdit = completedTasks.find((t) => t.id === taskId);
             if (!taskToEdit) {
-                statsPageLogger.error('Task not found for editing:', taskId);
+                statsPageLogger.error('Task not found for editing', { taskId });
                 setNotification({ message: 'Task not found', type: 'error' });
                 return;
             }
@@ -187,16 +169,13 @@ function Stats() {
                     task.id === taskId ? updatedTask : task
                 )
             );
-            statsPageLogger.info(
-                'Completed task updated successfully:',
-                updatedTask
-            );
+
             setNotification({
                 message: 'Completed task updated',
                 type: 'info',
             });
         } catch (error) {
-            statsPageLogger.error('Failed to update completed task:', error);
+            statsPageLogger.error('Failed to update completed task', { error });
             setNotification({
                 message: 'Failed to update completed task',
                 type: 'error',
@@ -209,22 +188,19 @@ function Stats() {
      * @param taskId - The ID of the task to delete.
      */
     const handleDeleteCompletedTask = async (taskId: string) => {
-        statsPageLogger.info('Deleting completed task:', { taskId });
+
         try {
             await tasksDB.deleteCompletedTask(taskId);
             setCompletedTasks((prevTasks) =>
                 prevTasks.filter((task) => task.id !== taskId)
             );
-            statsPageLogger.info(
-                'Completed task deleted successfully:',
-                taskId
-            );
+
             setNotification({
                 message: 'Completed task deleted',
                 type: 'info',
             });
         } catch (error) {
-            statsPageLogger.error('Failed to delete completed task:', error);
+            statsPageLogger.error('Failed to delete completed task', { error });
             setNotification({
                 message: 'Failed to delete completed task',
                 type: 'error',

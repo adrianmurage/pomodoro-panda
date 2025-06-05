@@ -10,11 +10,9 @@ export async function initializeApp() {
     if (process.env.NODE_ENV === "development") {
         // Already set to DEBUG by default
         logger.setPrefix("[DEV] ");
-        logger.info("App initialized in development mode");
     }
     else if (process.env.NODE_ENV === "production") {
         // Already set to WARN by default
-        logger.info("App initialized in production mode");
 
         // Check if we should use Sentry
         if (import.meta.env.VITE_USE_SENTRY === 'true' && import.meta.env.VITE_SENTRY_DSN) {
@@ -55,9 +53,8 @@ export async function initializeApp() {
                     sentryInstance: Sentry,
                 });
 
-                logger.info("Sentry initialized successfully");
             } catch (error) {
-                console.error("Failed to initialize Sentry:", error);
+                logger.error("Failed to initialize Sentry", { error });
             }
         } else {
             console.warn('Sentry configuration missing:', {
@@ -68,7 +65,6 @@ export async function initializeApp() {
     } else if (process.env.NODE_ENV === "test") {
         // Disable all logging in test mode
         logger.setLevel(LogLevel.NONE);
-        logger.info("App initialized in test mode");
     }
 
     // global error handlers ensure that no error goes unnoticed or un-logged
@@ -88,13 +84,19 @@ export async function initializeApp() {
         }
 
         // For JavaScript errors
-        logger.error('Uncaught error', event.error || event.message);
+        logger.error('Uncaught error', { 
+            error: event.error || event.message,
+            message: event.error?.message || event.message
+        });
         Sentry.captureException(event.error || new Error(event.message));
         return false;
     }, true);
 
     window.addEventListener('unhandledrejection', (event) => {
-        logger.error('Unhandled promise rejection', event.reason);
+        logger.error('Unhandled promise rejection', {
+            error: event.reason,
+            message: event.reason?.message
+        });
         Sentry.captureException(event.reason);
     });
 }

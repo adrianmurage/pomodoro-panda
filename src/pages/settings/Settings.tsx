@@ -6,6 +6,7 @@ import { useLogger } from "../../hooks/useLogger";
 import { settingsDB } from "../../utils/database";
 import { DEFAULT_TIMER_SETTINGS } from "../../constants/timerConstants";
 import { TimerSettingInput } from "./TimerSettingInput";
+import { TimerSettings } from "../../types/timer";
 
 interface UserSettings extends TimerSettings {
   addTasksToBottom?: boolean;
@@ -23,19 +24,13 @@ const SettingsPage = () => {
   const logger = useLogger("Settings");
   const [settings, setSettings] = useState<UserSettings>({
     ...DEFAULT_TIMER_SETTINGS,
-    workDuration: DEFAULT_TIMER_SETTINGS.workDuration,
-    breakDuration: DEFAULT_TIMER_SETTINGS.breakDuration,
-    longBreakDuration: DEFAULT_TIMER_SETTINGS.longBreakDuration,
-    sessionsUntilLongBreak: DEFAULT_TIMER_SETTINGS.sessionsUntilLongBreak,
+    addTasksToBottom: false
   });
   const [isLoading, setIsLoading] = useState(true);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>({});
   const [localSettings, setLocalSettings] = useState<UserSettings>({
     ...DEFAULT_TIMER_SETTINGS,
-    workDuration: DEFAULT_TIMER_SETTINGS.workDuration,
-    breakDuration: DEFAULT_TIMER_SETTINGS.breakDuration,
-    longBreakDuration: DEFAULT_TIMER_SETTINGS.longBreakDuration,
-    sessionsUntilLongBreak: DEFAULT_TIMER_SETTINGS.sessionsUntilLongBreak,
+    addTasksToBottom: false
   });
   const saveStatusTimeouts = useRef<{ [key: string]: NodeJS.Timeout }>({});
   const debouncedSaveRef = useRef<{
@@ -59,33 +54,13 @@ const SettingsPage = () => {
           addTasksToBottom: addTasksToBottom ?? false,
         };
         
-        // Log the timer settings in an easy to read format
-        logger.info("Timer Settings Loaded:", {
-          stored: {
-            workDuration: `${Math.floor(timerSettings?.workDuration / (60 * 1000))} minutes`,
-            breakDuration: `${Math.floor(timerSettings?.breakDuration / (60 * 1000))} minutes`,
-            longBreakDuration: `${Math.floor(timerSettings?.longBreakDuration / (60 * 1000))} minutes`,
-            sessionsUntilLongBreak: timerSettings?.sessionsUntilLongBreak
-          },
-          defaults: {
-            workDuration: `${Math.floor(DEFAULT_TIMER_SETTINGS.workDuration / (60 * 1000))} minutes`,
-            breakDuration: `${Math.floor(DEFAULT_TIMER_SETTINGS.breakDuration / (60 * 1000))} minutes`,
-            longBreakDuration: `${Math.floor(DEFAULT_TIMER_SETTINGS.longBreakDuration / (60 * 1000))} minutes`,
-            sessionsUntilLongBreak: DEFAULT_TIMER_SETTINGS.sessionsUntilLongBreak
-          },
-          final: {
-            workDuration: `${Math.floor(validSettings.workDuration / (60 * 1000))} minutes`,
-            breakDuration: `${Math.floor(validSettings.breakDuration / (60 * 1000))} minutes`,
-            longBreakDuration: `${Math.floor(validSettings.longBreakDuration / (60 * 1000))} minutes`,
-            sessionsUntilLongBreak: validSettings.sessionsUntilLongBreak
-          }
-        });
+
 
         setSettings(validSettings);
         setLocalSettings(validSettings);
         setIsLoading(false);
       } catch (error) {
-        logger.error("Failed to load settings:", error);
+        logger.error("Failed to load settings", { error });
         setIsLoading(false);
       }
     }
@@ -101,13 +76,9 @@ const SettingsPage = () => {
         ...prev,
         addTasksToBottom: newValue,
       }));
-      logger.info("Task position setting updated:", {
-        addTasksToBottom: newValue,
-      });
+
       if (!posthog.has_opted_in_capturing()) {
-        logger.debug(
-          "Analytics disabled - skipping event capture for task position setting",
-        );
+
         return;
       }
       try {
@@ -115,10 +86,7 @@ const SettingsPage = () => {
           setting: "addTasksToBottom",
           value: newValue,
         });
-        logger.debug("Analytics event captured for task position setting", {
-          setting: "addTasksToBottom",
-          value: newValue,
-        });
+
       } catch (error) {
         logger.warn(
           "Failed to capture analytics for task position setting update:",
@@ -126,7 +94,7 @@ const SettingsPage = () => {
         );
       }
     } catch (error) {
-      logger.error("Failed to update task position setting:", error);
+      logger.error("Failed to update task position setting", { error });
     }
   }, [settings.addTasksToBottom, setSettings, logger]);
 
@@ -175,19 +143,14 @@ const SettingsPage = () => {
             }));
             clearTimeout(savingTimeout);
             updateSaveStatus(setting, { saving: false, saved: true });
-            logger.info("Timer setting updated:", { [setting]: value });
+
             if (!posthog.has_opted_in_capturing()) {
-              logger.debug(
-                "Analytics disabled - skipping event capture for timer setting",
-              );
+
               return;
             }
             try {
               posthog.capture("settings_updated", { setting, value });
-              logger.debug("Analytics event captured for timer setting", {
-                setting,
-                value,
-              });
+
             } catch (error) {
               logger.warn(
                 "Failed to capture analytics for timer setting update:",
@@ -195,7 +158,7 @@ const SettingsPage = () => {
               );
             }
           } catch (error) {
-            logger.error("Failed to update timer setting:", error);
+            logger.error("Failed to update timer setting", { error });
             updateSaveStatus(setting, { saving: false, saved: false });
           }
         }, 2000); // Increased debounce time for better UX when typing numbers
@@ -208,12 +171,12 @@ const SettingsPage = () => {
   const handleTimerSettingChange = useCallback(
     (setting: keyof UserSettings, value: string) => {
       // Parse input value as minutes
-      let numValue = parseInt(value, 10) || 0;
+      const numValue = parseInt(value, 10) || 0;
       
       // Convert minutes to milliseconds for duration settings
       const valueToStore = setting.includes('Duration') ? numValue * 60 * 1000 : numValue;
 
-      logger.info(`Setting ${setting} to ${numValue} minutes (${valueToStore} ms)`);
+
 
       // Update both states to keep them in sync
       setSettings(prev => ({
@@ -232,7 +195,7 @@ const SettingsPage = () => {
           // Show saving status
           updateSaveStatus(setting, { saving: true, saved: false });
       } else {
-          logger.error('Failed to create debounced save function');
+          logger.error("Failed to create debounced save function - retry failed");
       }
     },
     [createDebouncedSave, setSettings, setLocalSettings, updateSaveStatus, logger]
@@ -269,12 +232,9 @@ const SettingsPage = () => {
           <button 
             className={styles.resetButton}
             onClick={() => {
-              const defaultValues = {
+              const defaultValues: UserSettings = {
                 ...DEFAULT_TIMER_SETTINGS,
-                workDuration: DEFAULT_TIMER_SETTINGS.workDuration,
-                breakDuration: DEFAULT_TIMER_SETTINGS.breakDuration,
-                longBreakDuration: DEFAULT_TIMER_SETTINGS.longBreakDuration,
-                sessionsUntilLongBreak: DEFAULT_TIMER_SETTINGS.sessionsUntilLongBreak,
+                addTasksToBottom: false
               };
 
               // Update both local and main settings state
@@ -289,7 +249,7 @@ const SettingsPage = () => {
                 updateSaveStatus(key, { saving: false, saved: true });
               });
 
-              logger.info("Settings reset to defaults");
+
             }}
           >
             Reset to Default

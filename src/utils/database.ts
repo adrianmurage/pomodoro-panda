@@ -45,7 +45,7 @@ export const initDB = (): Promise<IDBDatabase> => {
     const request = indexedDB.open(DB_NAME, DB_VERSION);
 
     request.onerror = () => {
-      dbLogger.error("Database error:", request.error);
+      dbLogger.error("Database initialization failed", { error: request.error });
       reject(request.error);
     };
 
@@ -446,8 +446,6 @@ export const settingsDB = {
   // Timer settings helpers
   async getTimerSettings(): Promise<TimerSettings> {
     try {
-      dbLogger.info("Retrieving timer settings from database...");
-      
       const workDuration =
         (await this.get<number>("workDuration")) ?? DEFAULT_TIMER_SETTINGS.workDuration;
       const breakDuration =
@@ -459,14 +457,6 @@ export const settingsDB = {
       const sessionsUntilLongBreak =
         (await this.get<number>("sessionsUntilLongBreak")) ??
         DEFAULT_TIMER_SETTINGS.sessionsUntilLongBreak;
-        
-      // Log raw values from database
-      dbLogger.info("Raw values from database:", {
-        workDuration,
-        breakDuration,
-        longBreakDuration,
-        sessionsUntilLongBreak
-      });
 
       // Convert any values that might be in minutes to milliseconds
       const convertToMs = (value: number | null | undefined, defaultMs: number): number => {
@@ -483,20 +473,12 @@ export const settingsDB = {
         sessionsUntilLongBreak: sessionsUntilLongBreak ?? DEFAULT_TIMER_SETTINGS.sessionsUntilLongBreak,
       };
 
-      dbLogger.info("Retrieved timer settings:", {
-        raw: normalizedSettings,
-        inMinutes: {
-          workDuration: `${Math.floor(normalizedSettings.workDuration / (60 * 1000))} minutes`,
-          breakDuration: `${Math.floor(normalizedSettings.breakDuration / (60 * 1000))} minutes`,
-          longBreakDuration: `${Math.floor(normalizedSettings.longBreakDuration / (60 * 1000))} minutes`,
-          sessionsUntilLongBreak: normalizedSettings.sessionsUntilLongBreak
-        }
-      });
+
 
       const settings = normalizedSettings;
       return settings;
     } catch (error) {
-      dbLogger.error("Failed to get timer settings:", error);
+      dbLogger.error("Failed to get timer settings", { error });
       return DEFAULT_TIMER_SETTINGS;
     }
   },
@@ -505,12 +487,8 @@ export const settingsDB = {
     const updates: Promise<void>[] = [];
 
     // Ensure all duration values are in milliseconds
-    // Log incoming settings before conversion
-    dbLogger.info("Setting timer settings with values:", settings);
-
     const ensureMilliseconds = (value: number): number => {
       if (value < 1000) {
-        dbLogger.info(`Converting ${value} minutes to milliseconds`);
         return value * 60 * 1000;
       }
       return value;
@@ -536,16 +514,6 @@ export const settingsDB = {
 
     await Promise.all(updates);
       
-    // Log final settings after all updates
-    const finalSettings = await this.getTimerSettings();
-    dbLogger.info("Timer settings updated successfully:", {
-      milliseconds: finalSettings,
-      minutes: {
-        workDuration: Math.floor(finalSettings.workDuration / (60 * 1000)),
-        breakDuration: Math.floor(finalSettings.breakDuration / (60 * 1000)),
-        longBreakDuration: Math.floor(finalSettings.longBreakDuration / (60 * 1000)),
-        sessionsUntilLongBreak: finalSettings.sessionsUntilLongBreak
-      }
-    });
+    await this.getTimerSettings();
   },
 };
