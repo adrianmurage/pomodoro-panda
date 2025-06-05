@@ -98,19 +98,22 @@ export const Timer: React.FC<TimerProps> = ({
   };
   const handleDone = async (timerState: TimerState) => {
     if (!timerState) {
+      timerLogger.error("Timer state is null or undefined");
       return;
     }
-    switchTimer();
-    showNotification(state.timerType);
-    setNotification(COMPLETION_MESSAGES[state.timerType]);
 
+    // Check if this is a break timer - if so, just show notification and switch
     if (
-      state.timerType === TIMER_TYPES.BREAK ||
-      state.timerType === TIMER_TYPES.LONG_BREAK
+      timerState.timerType === TIMER_TYPES.BREAK ||
+      timerState.timerType === TIMER_TYPES.LONG_BREAK
     ) {
+      switchTimer();
+      showNotification(timerState.timerType);
+      setNotification(COMPLETION_MESSAGES[timerState.timerType]);
       return;
     }
 
+    // For work timers, complete the task first, then switch
     let actualDurationMs = undefined;
 
     if (timerState.hasCompleted) {
@@ -118,12 +121,50 @@ export const Timer: React.FC<TimerProps> = ({
     } else if (!timerState.hasCompleted && timerState.hasStarted) {
       // Calculate actual duration based on time spent
       const totalDurationMs = settings.workDuration;
-      const timeLeftMs = state.timeLeft;
+      const timeLeftMs = timerState.timeLeft;
       actualDurationMs = totalDurationMs - timeLeftMs;
     }
 
+    // Validate required data before proceeding
+    if (!timerState.activeTaskId) {
+      timerLogger.error("No active task ID found", { timerState });
+      showInAppNotification(ERROR_MESSAGES.TASK_COMPLETE_FAILED);
+      switchTimer();
+      return;
+    }
+
+    // Check if the task from timer state still exists - don't rely on selectedTask
+    // since it might have changed due to task reordering/deletion
+    let taskToComplete = selectedTask;
+    if (!selectedTask || selectedTask.id !== timerState.activeTaskId) {
+      timerLogger.warn("Selected task doesn't match timer's active task", {
+        selectedTaskId: selectedTask?.id,
+        activeTaskId: timerState.activeTaskId
+      });
+      
+      // The task might have been moved or the activeTask selection changed
+      // We'll still try to complete the original task from the timer
+      taskToComplete = {
+        id: timerState.activeTaskId,
+        category: selectedTask?.category || "Unknown",
+        description: selectedTask?.description || "Task from timer",
+        completed: false,
+        pomodoros: 1
+      };
+    }
+
+    if (!taskToComplete) {
+      timerLogger.error("No task to complete", { 
+        activeTaskId: timerState.activeTaskId,
+        selectedTask: selectedTask?.id 
+      });
+      showInAppNotification(ERROR_MESSAGES.TASK_COMPLETE_FAILED);
+      switchTimer();
+      return;
+    }
+
     const completedTask = {
-      ...selectedTask,
+      ...taskToComplete,
       id: `completed-${timerState.activeTaskId}-${Date.now()}`,
       endTime: Date.now(),
       duration: actualDurationMs,
@@ -132,11 +173,10 @@ export const Timer: React.FC<TimerProps> = ({
     };
 
     try {
-      if (!timerState.activeTaskId) {
-        throw new Error("No task id found");
-      }
       await tasksDB.completeOnePomodoro(timerState.activeTaskId, completedTask);
       await onTaskComplete();
+      
+      // Analytics tracking
       if (!posthog.has_opted_in_capturing()) {
         timerLogger.debug(
           "Analytics disabled - skipping event capture for timer completion",
@@ -164,13 +204,31 @@ export const Timer: React.FC<TimerProps> = ({
           );
         }
       }
-      showInAppNotification(COMPLETION_MESSAGES[state.timerType]);
+
+      // Success - switch timer and show completion message
+      switchTimer();
+      showNotification(timerState.timerType);
+      setNotification(COMPLETION_MESSAGES[timerState.timerType]);
+      showInAppNotification(COMPLETION_MESSAGES[timerState.timerType]);
+      
     } catch (error) {
       timerLogger.error(
         "Failed to complete task:",
         error instanceof Error ? error.message : error,
+        { 
+          activeTaskId: timerState.activeTaskId, 
+          selectedTask: selectedTask?.id,
+          taskToComplete: taskToComplete?.id,
+          timerState,
+          errorDetails: error instanceof Error ? error.stack : error
+        }
       );
       showInAppNotification(ERROR_MESSAGES.TASK_COMPLETE_FAILED);
+      
+      // Still switch timer even if task completion failed
+      switchTimer();
+      showNotification(timerState.timerType);
+      setNotification(COMPLETION_MESSAGES[timerState.timerType]);
     }
   };
 

@@ -165,6 +165,12 @@ export const tasksDB: ITaskDatabase = {
   },
 
   async completeOnePomodoro(taskId: string, completedTask: Task): Promise<void> {
+    if (!taskId) {
+      throw new Error("Task ID is required");
+    }
+    
+    dbLogger.debug("Completing pomodoro for task", { taskId, completedTaskId: completedTask.id });
+    
     const db = await initDB();
     return new Promise((resolve, reject) => {
       const transaction = db.transaction([TASKS, COMPLETED_TASKS], "readwrite");
@@ -177,9 +183,48 @@ export const tasksDB: ITaskDatabase = {
       getRequest.onsuccess = () => {
         const originalTask = getRequest.result;
         if (!originalTask) {
-          reject(new Error("Task not found"));
+          dbLogger.warn("Task not found in database - creating completed record without updating original", { taskId });
+          
+          // Debug: List all available tasks
+          const debugRequest = tasksStore.getAll();
+          debugRequest.onsuccess = () => {
+            const allTasks = debugRequest.result || [];
+            dbLogger.info("Available tasks in database", { 
+              taskId, 
+              availableTaskIds: allTasks.map(t => t.id),
+              totalTasks: allTasks.length 
+            });
+          };
+          
+          // Instead of failing, just add to completed tasks without modifying the original
+          // This handles the case where the task was already deleted or doesn't exist
+          const completedTaskId = `${completedTask.id}_${Date.now()}`;
+          const completedRecord: CompletedTaskRecord = {
+            ...completedTask,
+            id: completedTaskId,
+            endTime: Date.now(),
+            pomodorosCompleted: 1,
+            order: 0 // Default order since we don't have the original task
+          };
+
+          const addCompletedRequest = completedStore.add(completedRecord);
+          addCompletedRequest.onsuccess = () => {
+            dbLogger.info("Added completed task record for missing original task", { taskId, completedTaskId });
+            resolve();
+          };
+          addCompletedRequest.onerror = () => {
+            dbLogger.error("Failed to add completed task record for missing original", { 
+              error: addCompletedRequest.error, 
+              completedTaskId,
+              taskId
+            });
+            reject(addCompletedRequest.error);
+          };
+          
           return;
         }
+
+        dbLogger.debug("Found original task", { taskId, remainingPomodoros: originalTask.pomodoros });
 
         const remainingPomodoros = (originalTask.pomodoros || 0) - 1;
 
@@ -194,25 +239,59 @@ export const tasksDB: ITaskDatabase = {
         };
 
         const addCompletedRequest = completedStore.add(completedRecord);
-        addCompletedRequest.onerror = () => reject(addCompletedRequest.error);
+        addCompletedRequest.onerror = () => {
+          dbLogger.error("Failed to add completed task record", { 
+            error: addCompletedRequest.error, 
+            completedTaskId 
+          });
+          reject(addCompletedRequest.error);
+        };
 
         // Update or delete original task
         if (remainingPomodoros >= 1) {
+          dbLogger.debug("Updating task with remaining pomodoros", { taskId, remainingPomodoros });
           const updateRequest = tasksStore.put({
             ...originalTask,
             pomodoros: remainingPomodoros,
           });
-          updateRequest.onerror = () => reject(updateRequest.error);
+          updateRequest.onerror = () => {
+            dbLogger.error("Failed to update task", { 
+              error: updateRequest.error, 
+              taskId, 
+              remainingPomodoros 
+            });
+            reject(updateRequest.error);
+          };
         } else {
+          dbLogger.debug("Deleting completed task", { taskId });
           const deleteRequest = tasksStore.delete(taskId);
-          deleteRequest.onerror = () => reject(deleteRequest.error);
+          deleteRequest.onerror = () => {
+            dbLogger.error("Failed to delete completed task", { 
+              error: deleteRequest.error, 
+              taskId 
+            });
+            reject(deleteRequest.error);
+          };
         }
 
-        transaction.oncomplete = () => resolve();
+        transaction.oncomplete = () => {
+          dbLogger.debug("Task completion transaction successful", { taskId, completedTaskId });
+          resolve();
+        };
       };
 
-      getRequest.onerror = () => reject(getRequest.error);
-      transaction.onerror = () => reject(transaction.error);
+      getRequest.onerror = () => {
+        dbLogger.error("Failed to get original task", { error: getRequest.error, taskId });
+        reject(getRequest.error);
+      };
+      
+      transaction.onerror = () => {
+        dbLogger.error("Transaction failed during task completion", { 
+          error: transaction.error, 
+          taskId 
+        });
+        reject(transaction.error);
+      };
     });
   },
 

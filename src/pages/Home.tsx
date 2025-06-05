@@ -131,6 +131,11 @@ function Home() {
 
     const handleDeleteTask = async (taskId: string) => {
         try {
+            // Log if we're deleting the active task
+            if (activeTask?.id === taskId) {
+                homePageLogger.warn('Deleting active task', { taskId, activeTaskId: activeTask.id });
+            }
+            
             await tasksDB.delete(taskId);
             setTasks((prev) => prev.filter((task) => task.id !== taskId));
             setNotification({
@@ -205,6 +210,13 @@ function Home() {
                 tasksDB.getAll(),
                 tasksDB.getCompletedTasksForToday(),
             ]);
+            
+            homePageLogger.debug('Task lists updated after completion', {
+                totalTasks: tasks.length,
+                totalCompletedToday: completedTasks.length,
+                newActiveTaskId: tasks[0]?.id || null
+            });
+            
             setTasks(tasks);
             setCompletedTasks(completedTasks);
         } catch (error) {
@@ -379,7 +391,16 @@ function Home() {
         localStorage.setItem('statsBannerDismissed', newCount.toString());
     };
 
-    const activeTask = tasks[0] || null;
+    const activeTask = tasks.length > 0 ? tasks[0] : null;
+    
+    // Log when active task changes for debugging
+    useEffect(() => {
+        homePageLogger.debug('Active task changed', { 
+            activeTaskId: activeTask?.id || null,
+            activeTaskDescription: activeTask?.description || null,
+            totalTasks: tasks.length
+        });
+    }, [activeTask?.id, homePageLogger, tasks.length]);
     return (
         <>
             <div className={`app ${showBanner ? 'app-with-banner' : ''}`}>
