@@ -390,7 +390,7 @@ export const tasksDB = {
 };
 
 export const settingsDB = {
-  async get(key: string): Promise<boolean | null> {
+  async get(key: string): Promise<boolean | string | number | null> {
     const db = await initDB();
     return new Promise((resolve, reject) => {
       const transaction = db.transaction([SETTINGS_STORE], 'readonly');
@@ -402,7 +402,7 @@ export const settingsDB = {
     });
   },
 
-  async set(key: string, value: boolean): Promise<void> {
+  async set(key: string, value: boolean | number | string | null): Promise<void> {
     if (!key || typeof key !== 'string' || key.trim() === '') {
       throw new Error('Setting key cannot be empty');
     }
