@@ -30,15 +30,23 @@ export function useUserSettings() {
           })
         );
 
-        const newSettings = entries.reduce((acc, [key, value]) => {
-          if (value !== null) {
-            acc[key] = value;
-          }
-          return acc;
-        }, {} as UserSettings);
-        
-        if (Object.keys(newSettings).length > 0) {
-          setSettings((prev) => ({ ...prev, ...newSettings }));
+        // const newSettings = entries.reduce((acc, [key, value]) => {
+        //   if (value !== null) {
+        //     acc[key] = value;
+        //   }
+        //   return acc;
+        // }, {} as UserSettings);
+
+        // if (Object.keys(newSettings).length > 0) {
+        //   setSettings((prev) => ({ ...prev, ...newSettings }));
+        // }
+
+        // Acceptable since this is being done on initial load only
+        for (const [key, value] of entries) {
+          setSettings((prev) => ({
+            ...prev,
+            [key]: value ?? prev[key],
+          }));
         }
 
         setIsLoading(false);

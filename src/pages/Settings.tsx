@@ -90,14 +90,14 @@ const Settings = () => {
           <TimerSettingInput
             label="Pomodoro Session"
             settingKey="workDuration"
-            value={settings.workDuration}
+            value={settings.workDuration / 60000}
             unit="min"
             min={1}
             max={120}
             isEditing={editingSetting === "workDuration"}
             onEdit={setEditingSetting}
             onChange={(value) =>
-              setSettings((prev) => ({ ...prev, workDuration: value }))
+              setSettings((prev) => ({ ...prev, workDuration: value * 60000 }))
             }
             onSave={() => {
               setEditingSetting(null);
@@ -108,15 +108,15 @@ const Settings = () => {
           {/* Short Break */}
           <TimerSettingInput
             label="Short Break"
-            settingKey="shortBreakDuration"
-            value={settings.breakDuration}
+            settingKey="breakDuration"
+            value={settings.breakDuration / 60000}
             unit="min"
             min={1}
             max={120}
             isEditing={editingSetting === "breakDuration"}
             onEdit={setEditingSetting}
             onChange={(value) =>
-              setSettings((prev) => ({ ...prev, breakDuration: value }))
+              setSettings((prev) => ({ ...prev, breakDuration: value * 60000 }))
             }
             onSave={() => {
               setEditingSetting(null);
@@ -128,14 +128,14 @@ const Settings = () => {
           <TimerSettingInput
             label="Long Break"
             settingKey="longBreakDuration"
-            value={settings.longBreakDuration}
+            value={settings.longBreakDuration / 60000}
             unit="min"
             min={1}
             max={120}
             isEditing={editingSetting === "longBreakDuration"}
             onEdit={setEditingSetting}
             onChange={(value) =>
-              setSettings((prev) => ({ ...prev, longBreakDuration: value }))
+              setSettings((prev) => ({ ...prev, longBreakDuration: value * 60000 }))
             }
             onSave={() => {
               setEditingSetting(null);

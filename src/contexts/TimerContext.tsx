@@ -14,7 +14,7 @@ import type { Task } from "../types/task";
 import type {
   TimerAction,
   TimerContextType,
-  TimerSettings,
+  // TimerSettings,
   TimerState,
 } from "../types/timer";
 import { useUserSettings } from "../hooks/useUserSettings";
@@ -36,6 +36,7 @@ function timerReducer(state: TimerState, action: TimerAction): TimerState {
     case "UPDATE_TIMER_STATE":
       return { ...state, ...action.payload };
     case "START_BREAK":
+      console.log("Starting break timer:", action.payload);
       return {
         ...state,
         timeLeft: action.payload.duration,
@@ -78,11 +79,12 @@ const TimerContext = createContext<TimerContextType | null>(null);
 
 export const TimerProvider: React.FC<{
   children: React.ReactNode;
-  settings?: TimerSettings;
-}> = ({ children, settings = DEFAULT_TIMER_SETTINGS }) => {
+}> = ({ children }) => {
   const { settings: userSettings, isLoading: userSettingsLoading } =
     useUserSettings();
 
+  // console.log("Default settings:", DEFAULT_TIMER_SETTINGS.workDuration);
+  // console.log("User settings:", userSettings.workDuration);
   const [state, dispatch] = useReducer(timerReducer, initialState);
 
   const isInitialStateLoaded = useRef<boolean>(false);
@@ -103,22 +105,22 @@ export const TimerProvider: React.FC<{
     if (state.timerType === TIMER_TYPES.WORK) {
       const nextSessions = state.sessionsCompleted + 1;
 
-      if (nextSessions % settings.sessionsUntilLongBreak === 0) {
+      if (nextSessions % userSettings.sessionsUntilLongBreak === 0) {
         return {
           type: TIMER_TYPES.LONG_BREAK,
-          duration: settings.longBreakDuration,
+          duration: userSettings.longBreakDuration,
         };
       }
       return {
         type: TIMER_TYPES.BREAK,
-        duration: settings.breakDuration,
+        duration: userSettings.breakDuration,
       };
     }
     return {
       type: TIMER_TYPES.WORK,
-      duration: settings.workDuration,
+      duration: userSettings.workDuration,
     };
-  }, [state.timerType, state.sessionsCompleted, settings]);
+  }, [state.timerType, state.sessionsCompleted, userSettings]);
 
   // Update timer logic
   const updateTimer = useCallback(() => {
@@ -163,7 +165,8 @@ export const TimerProvider: React.FC<{
 
     // check if the initialState setup is done
     if (!isInitialStateLoaded.current) {
-      const initialTimeLeft = userSettings.workDuration * 60 * 1000;
+      const initialTimeLeft = userSettings.workDuration;
+      console.log("Time Left:", userSettings.workDuration, initialTimeLeft);
 
       dispatch({
         type: "UPDATE_TIMER_STATE",
@@ -179,7 +182,7 @@ export const TimerProvider: React.FC<{
 
     // Set the initialState
     if (!state.isRunning) {
-      initialState.timeLeft = userSettings.workDuration * 90 * 1000;
+      initialState.timeLeft = userSettings.workDuration;
     }
 
     return () => {
@@ -295,7 +298,7 @@ export const TimerProvider: React.FC<{
     };
 
     if (nextTimer.type === TIMER_TYPES.WORK) {
-      payload.timeLeft = userSettings.workDuration * 60 * 1000;
+      payload.timeLeft = userSettings.workDuration;
       payload.timerType = TIMER_TYPES.WORK;
       payload.sessionsCompleted = state.sessionsCompleted + 1;
     } else if (nextTimer.type === TIMER_TYPES.BREAK) {
